@@ -36,11 +36,11 @@ export function createDataChannel(
   return channel;
 }
 
-/** Generate a short 4-character room code (no ambiguous chars). */
+/** Generate a 6-character room code (no ambiguous chars: I, O, 0, 1). */
 export function generateRoomCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 6; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
   }
   return code;

@@ -1,0 +1,6 @@
+name = "arixdrop-signaling"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+# Free tier: no Durable Objects required for the simple in-memory demo.
+# For production multi-isolate rooms, add a Durable Object binding.

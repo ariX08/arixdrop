@@ -55,30 +55,57 @@ worker/
 5. Files are chunked and sent over the DataChannel. Progress is shown live.
 6. Room expires (15 min) or is cleaned up when both peers leave.
 
-## Design notes
+## Deploy (important)
 
-- One primary action: **Send files**.
-- Room panel is the visual and interaction focus (asymmetric hero).
-- Full state coverage: idle → creating → waiting → transfer → complete / error.
-- No permanent storage, no accounts, no fabricated social proof.
-- Colors, type, and spacing are product-specific (see `tailwind.config.ts`).
+This project has **two** parts. Do **not** run `wrangler deploy` as the main site deploy command.
 
-## Deploy
+### 1. Frontend → Vercel
 
-**Frontend (Vercel)**
+1. Go to [vercel.com](https://vercel.com) → Sign in with GitHub
+2. **Add New Project** → import `ariX08/arixdrop`
+3. Framework: **Next.js** (auto-detected)
+4. Build command: `npm run build` (default)
+5. **Leave Deploy Command empty** — do not set `wrangler deploy`
+6. Click **Deploy**
+
+You get a URL like `https://arixdrop.vercel.app`.
+
+### 2. Signaling → Cloudflare Workers (separate)
+
+From your computer:
 
 ```bash
-npx vercel
+npm install
+npm run worker:deploy
+# or: npx wrangler deploy --config worker/wrangler.toml
 ```
 
-**Signaling (Cloudflare)**
+First time: `npx wrangler login` (opens browser).
 
-```bash
-cd worker
-npx wrangler deploy
-```
+You get a URL like:
+`https://arixdrop-signaling.<subdomain>.workers.dev`
 
-Then set `NEXT_PUBLIC_SIGNALING_URL` to the deployed Worker WebSocket URL (e.g. `wss://arixdrop-signaling.<account>.workers.dev/ws`).
+WebSocket path:
+`wss://arixdrop-signaling.<subdomain>.workers.dev/ws`
+
+### 3. Connect them
+
+In Vercel → Project → **Settings → Environment Variables**:
+
+| Name | Value |
+|------|--------|
+| `NEXT_PUBLIC_SIGNALING_URL` | `wss://arixdrop-signaling.<subdomain>.workers.dev/ws` |
+
+Redeploy the Vercel project after adding the variable.
+
+### If you used Cloudflare Pages by mistake
+
+Your log showed Next.js **built successfully**, then failed on `npx wrangler deploy` because that command expects a Worker entry file in the root. For the website:
+
+- Use **Vercel** for the Next.js app, **or**
+- On Cloudflare Pages: set **Build command** to `npm run build` and **clear/remove** any Deploy command that runs `wrangler deploy`
+
+Deploy the Worker separately with `npm run worker:deploy` from your machine.
 
 ## License
 

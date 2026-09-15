@@ -12,12 +12,11 @@ import {
 import { SignalingClient } from "@/lib/signaling";
 
 interface RoomPanelProps {
-  initialRoom?: string | null;
-  joinCode?: string | null;
+  joinRequest?: { code: string; nonce: number } | null;
   onJoinHandled?: () => void;
 }
 
-export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelProps) {
+export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   const [state, setState] = useState<RoomState>("idle");
   const [role, setRole] = useState<"sender" | "receiver" | null>(null);
   const [roomCode, setRoomCode] = useState("");
@@ -43,6 +42,7 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
   const channelRef = useRef<RTCDataChannel | null>(null);
   const roleRef = useRef<"sender" | "receiver" | null>(null);
   const makingOffer = useRef(false);
+  const lastJoinNonce = useRef<number>(0);
 
   const clearTimers = useCallback(() => {
     if (ttlRef.current) clearInterval(ttlRef.current);
@@ -95,7 +95,6 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
 
   function setupPeerConnection() {
     if (pcRef.current) return pcRef.current;
-
     const pc = createPeerConnection(
       (candidate) => {
         try {
@@ -103,20 +102,16 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
         } catch {}
       },
       (s) => {
-        if (s === "failed" || s === "disconnected") {
-          setStatusLine("Connection interrupted");
-        }
+        if (s === "failed" || s === "disconnected") setStatusLine("Connection interrupted");
       }
     );
     pcRef.current = pc;
-
     pc.ondatachannel = (ev) => {
       const ch = ev.channel;
       ch.binaryType = "arraybuffer";
       channelRef.current = ch;
       wireChannel(ch, "receiver");
     };
-
     return pc;
   }
 
@@ -167,34 +162,26 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
               chunks = [];
               received = 0;
               setFiles((prev) =>
-                prev.map((f, i) =>
-                  i === current ? { ...f, progress: 1, status: "done" } : f
-                )
+                prev.map((f, i) => (i === current ? { ...f, progress: 1, status: "done" } : f))
               );
               current += 1;
               if (current >= receiveMeta.length) {
                 setOverall(1);
                 setState("complete");
-                setStatusLine("All files received");
               }
             }
           } catch {}
           return;
         }
-
         const buf = ev.data as ArrayBuffer;
         chunks.push(buf);
         received += buf.byteLength;
         const total = receiveMeta[current]?.size || 1;
         const p = Math.min(1, received / total);
         setFiles((prev) =>
-          prev.map((f, i) =>
-            i === current ? { ...f, progress: p, status: "transferring" } : f
-          )
+          prev.map((f, i) => (i === current ? { ...f, progress: p, status: "transferring" } : f))
         );
-        const doneSizes = receiveMeta
-          .slice(0, current)
-          .reduce((a, f) => a + f.size, 0);
+        const doneSizes = receiveMeta.slice(0, current).reduce((a, f) => a + f.size, 0);
         const all = receiveMeta.reduce((a, f) => a + f.size, 0) || 1;
         setOverall((doneSizes + received) / all);
       };
@@ -222,7 +209,6 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
   async function handleSignalMessage(ev: {
     type: string;
     payload?: unknown;
-    from?: string;
     peers?: number;
   }) {
     if (ev.type === "joined" && typeof ev.peers === "number") {
@@ -233,9 +219,7 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
             ? "Both devices connected — you can send"
             : "Both devices connected — waiting for files"
         );
-        if (roleRef.current === "sender") {
-          void startOffer();
-        }
+        if (roleRef.current === "sender") void startOffer();
       } else {
         setStatusLine(
           roleRef.current === "sender"
@@ -266,8 +250,7 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
       signalingRef.current?.sendAnswer(answer);
     }
     if (ev.type === "answer" && roleRef.current === "sender" && ev.payload) {
-      const pc = pcRef.current;
-      if (pc) await pc.setRemoteDescription(ev.payload as RTCSessionDescriptionInit);
+      if (pcRef.current) await pcRef.current.setRemoteDescription(ev.payload as RTCSessionDescriptionInit);
     }
     if (ev.type === "ice" && ev.payload) {
       try {
@@ -283,9 +266,10 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
 
   async function connectAndJoin(code: string, as: "sender" | "receiver") {
     roleRef.current = as;
+    disconnectSignaling();
+    teardownRtc();
     const client = new SignalingClient();
     signalingRef.current = client;
-
     client.on((ev) => {
       void handleSignalMessage(ev as { type: string; payload?: unknown; peers?: number });
       if (ev.type === "socket-error") {
@@ -294,22 +278,30 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
         setState("error");
       }
     });
-
     await client.connect(code);
   }
 
+  // Enter code / deep link — always runs when nonce changes
   useEffect(() => {
-    const code = (joinCode || initialRoom || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    if (!code || code.length !== 6) return;
-    if (state !== "idle") return;
+    if (!joinRequest) return;
+    const code = joinRequest.code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (code.length !== 6) return;
+    if (joinRequest.nonce === lastJoinNonce.current) return;
+    lastJoinNonce.current = joinRequest.nonce;
 
     let cancelled = false;
     (async () => {
+      clearTimers();
+      disconnectSignaling();
+      teardownRtc();
       setRole("receiver");
       roleRef.current = "receiver";
       setState("connecting");
       setStatusLine("Connecting to room…");
       setRoomCode(code);
+      setRoomLink("");
+      setPendingNames([]);
+      setPeerCount(0);
       try {
         await connectAndJoin(code, "receiver");
         if (!cancelled) {
@@ -331,7 +323,7 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [joinCode, initialRoom]);
+  }, [joinRequest?.nonce, joinRequest?.code]);
 
   function handleSendClick() {
     fileInputRef.current?.click();
@@ -402,28 +394,19 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
     for (let fi = 0; fi < selected.length; fi++) {
       const file = selected[fi];
       let offset = 0;
-      setFiles((prev) =>
-        prev.map((f, i) =>
-          i === fi ? { ...f, status: "transferring" } : f
-        )
-      );
+      setFiles((prev) => prev.map((f, i) => (i === fi ? { ...f, status: "transferring" } : f)));
 
       while (offset < file.size) {
         const slice = file.slice(offset, offset + CHUNK_SIZE);
         const buf = await slice.arrayBuffer();
-
-        // Backpressure
         while (ch.bufferedAmount > 2 * 1024 * 1024) {
           await new Promise((r) => setTimeout(r, 20));
         }
         ch.send(buf);
         offset += buf.byteLength;
         sentTotal += buf.byteLength;
-
         const p = offset / file.size;
-        setFiles((prev) =>
-          prev.map((f, i) => (i === fi ? { ...f, progress: p } : f))
-        );
+        setFiles((prev) => prev.map((f, i) => (i === fi ? { ...f, progress: p } : f)));
         setOverall(sentTotal / totalSize);
         const elapsed = (performance.now() - t0) / 1000;
         if (elapsed > 0.2) {
@@ -433,16 +416,13 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
 
       ch.send(JSON.stringify({ type: "file-done", index: fi }));
       setFiles((prev) =>
-        prev.map((f, i) =>
-          i === fi ? { ...f, progress: 1, status: "done" } : f
-        )
+        prev.map((f, i) => (i === fi ? { ...f, progress: 1, status: "done" } : f))
       );
     }
 
     setOverall(1);
     setState("complete");
     setSending(false);
-    setStatusLine("Transfer complete");
   }
 
   async function copy(text: string, kind: "code" | "link") {
@@ -482,6 +462,8 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
   const canSend =
     role === "sender" && peerCount >= 2 && channelReady && !sending && state === "waiting";
 
+  const multiFile = files.length > 1;
+
   return (
     <div
       className="bg-surface border border-border rounded-xl shadow-panel overflow-hidden"
@@ -510,7 +492,7 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
               type="button"
               data-select-files
               onClick={handleSendClick}
-              className="btn-primary mt-2 inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover active:bg-accent-pressed transition-colors"
+              className="btn-primary mt-2 h-10 px-5 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors"
             >
               Select files
             </button>
@@ -524,14 +506,9 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
             <span className="text-sm font-medium text-muted">
               {state === "connecting" ? "Joining room…" : "Creating room…"}
             </span>
-            <span
-              className="inline-block w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"
-              aria-hidden
-            />
+            <span className="inline-block w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
           </div>
-          <div className="rounded-lg border border-border bg-paper/40 min-h-[120px] flex items-center justify-center px-4 text-center">
-            <p className="text-sm text-muted">{statusLine || "Connecting…"}</p>
-          </div>
+          <p className="text-sm text-muted text-center py-8">{statusLine || "Connecting…"}</p>
         </div>
       )}
 
@@ -554,7 +531,7 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
                 <button
                   type="button"
                   onClick={() => copy(roomCode, "code")}
-                  className="h-9 px-3 rounded-md border border-border text-sm font-medium hover:bg-paper transition-colors"
+                  className="h-9 px-3 rounded-md border border-border text-sm font-medium hover:bg-paper"
                 >
                   {copyFeedback === "code" ? "Copied" : "Copy"}
                 </button>
@@ -605,13 +582,12 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
             </div>
           </div>
 
-          {/* SEND BUTTON — sender only, when peer connected + data channel open */}
           {role === "sender" && (
             <button
               type="button"
               disabled={!canSend}
               onClick={() => void sendFilesNow()}
-              className="btn-primary w-full h-12 rounded-lg bg-accent text-white font-medium text-base hover:bg-accent-hover active:bg-accent-pressed disabled:opacity-40 disabled:cursor-not-allowed transition-colors mb-3"
+              className="btn-primary w-full h-12 rounded-lg bg-accent text-white font-medium text-base hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed mb-3"
             >
               {sending
                 ? "Sending…"
@@ -623,11 +599,7 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={reset}
-            className="text-sm text-muted hover:text-ink underline-offset-2 hover:underline"
-          >
+          <button type="button" onClick={reset} className="text-sm text-muted hover:text-ink underline-offset-2 hover:underline">
             {role === "receiver" ? "Leave room" : "Cancel room"}
           </button>
         </div>
@@ -641,37 +613,45 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
             </span>
             <span className="text-xs text-muted tabular-nums">{speed}</span>
           </div>
-          <ul className="space-y-4 mb-6">
+
+          {/* One bar per file; overall only if multiple files */}
+          <ul className="space-y-4">
             {files.map((f) => (
-              <li key={f.name} className="flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="truncate font-medium">{f.name}</span>
-                    <span className="text-muted tabular-nums shrink-0 ml-2">
-                      {formatBytes(f.size)}
-                    </span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-border overflow-hidden">
-                    <div
-                      className={`progress-fill h-full rounded-full ${
-                        f.status === "done" ? "bg-success" : "bg-accent"
-                      }`}
-                      style={{ width: `${Math.round(f.progress * 100)}%` }}
-                    />
-                  </div>
+              <li key={f.name}>
+                <div className="flex justify-between text-sm mb-1.5 gap-3">
+                  <span className="truncate font-medium">{f.name}</span>
+                  <span className="text-muted tabular-nums shrink-0">
+                    {formatBytes(f.size)}
+                    {" · "}
+                    {f.status === "done" ? "Done" : `${Math.round(f.progress * 100)}%`}
+                  </span>
                 </div>
-                <span className="text-xs tabular-nums w-10 text-right text-muted">
-                  {f.status === "done" ? "Done" : `${Math.round(f.progress * 100)}%`}
-                </span>
+                <div className="h-2 rounded-full bg-border overflow-hidden">
+                  <div
+                    className={`progress-fill h-full rounded-full ${
+                      f.status === "done" ? "bg-success" : "bg-accent"
+                    }`}
+                    style={{ width: `${Math.round(f.progress * 100)}%` }}
+                  />
+                </div>
               </li>
             ))}
           </ul>
-          <div className="h-2 rounded-full bg-border overflow-hidden">
-            <div
-              className="progress-fill h-full bg-accent rounded-full"
-              style={{ width: `${Math.round(overall * 100)}%` }}
-            />
-          </div>
+
+          {multiFile && (
+            <div className="mt-5 pt-4 border-t border-border">
+              <div className="flex justify-between text-sm mb-1.5">
+                <span className="text-muted">Overall</span>
+                <span className="font-medium tabular-nums">{Math.round(overall * 100)}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-border overflow-hidden">
+                <div
+                  className="progress-fill h-full bg-accent rounded-full"
+                  style={{ width: `${Math.round(overall * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -681,14 +661,12 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
             {role === "receiver" ? "Files received" : "Transfer complete"}
           </p>
           <p className="text-sm text-muted mb-5">
-            {role === "receiver"
-              ? "Check your downloads folder."
-              : "The other device should have the files."}
+            {role === "receiver" ? "Check your downloads." : "The other device should have the files."}
           </p>
           <button
             type="button"
             onClick={reset}
-            className="btn-primary h-11 px-5 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover transition-colors"
+            className="btn-primary h-11 px-5 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover"
           >
             Done
           </button>
@@ -702,7 +680,7 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
           <button
             type="button"
             onClick={reset}
-            className="btn-primary h-11 px-5 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover transition-colors"
+            className="btn-primary h-11 px-5 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover"
           >
             Back
           </button>

@@ -12,7 +12,7 @@ export type SignalingEvent =
   | { type: "close" }
   | { type: "socket-error"; message: string };
 
-function wsUrl(): string {
+function baseWsUrl(): string {
   const base = (process.env.NEXT_PUBLIC_SIGNALING_URL || SIGNALING_URL).replace(/\/$/, "");
   if (base.endsWith("/ws")) return base;
   return `${base}/ws`;
@@ -31,29 +31,27 @@ export class SignalingClient {
     this.listeners.forEach((fn) => fn(ev));
   }
 
-  connect(): Promise<void> {
+  /** Connect already scoped to a room (required for Durable Object routing). */
+  connect(room: string): Promise<void> {
+    const code = room.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    if (code.length !== 6) {
+      return Promise.reject(new Error("Invalid room code"));
+    }
+
     return new Promise((resolve, reject) => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         resolve();
         return;
       }
 
-      let url: string;
-      try {
-        url = wsUrl();
-      } catch (e) {
-        reject(e);
-        return;
-      }
-
-      // Local fallback if env points to workers but user is testing locally
+      const url = `${baseWsUrl()}?room=${encodeURIComponent(code)}`;
       const socket = new WebSocket(url);
       this.ws = socket;
 
       const timeout = setTimeout(() => {
         socket.close();
         reject(new Error("Signaling server timed out. Is NEXT_PUBLIC_SIGNALING_URL set?"));
-      }, 10000);
+      }, 12000);
 
       socket.onopen = () => {
         clearTimeout(timeout);
@@ -63,8 +61,13 @@ export class SignalingClient {
 
       socket.onerror = () => {
         clearTimeout(timeout);
-        this.emit({ type: "socket-error", message: "Could not reach signaling server" });
-        reject(new Error("Could not reach signaling server. Check NEXT_PUBLIC_SIGNALING_URL."));
+        this.emit({
+          type: "socket-error",
+          message: "Could not reach signaling server",
+        });
+        reject(
+          new Error("Could not reach signaling server. Check NEXT_PUBLIC_SIGNALING_URL.")
+        );
       };
 
       socket.onclose = () => {
@@ -77,7 +80,7 @@ export class SignalingClient {
           const data = JSON.parse(String(event.data));
           this.emit(data as SignalingEvent);
         } catch {
-          // ignore malformed
+          // ignore
         }
       };
     });
@@ -90,8 +93,9 @@ export class SignalingClient {
     this.ws.send(JSON.stringify(msg));
   }
 
-  join(room: string) {
-    this.send({ type: "join", room: room.toUpperCase() });
+  /** Room is already selected via connect(room); kept for API compatibility. */
+  join(_room: string) {
+    // no-op: Durable Object join happens on WebSocket open with ?room=
   }
 
   sendOffer(payload: RTCSessionDescriptionInit) {

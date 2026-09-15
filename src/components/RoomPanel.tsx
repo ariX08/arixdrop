@@ -42,10 +42,13 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
     signalingRef.current = null;
   }, []);
 
-  useEffect(() => () => {
-    clearTimers();
-    disconnectSignaling();
-  }, [clearTimers, disconnectSignaling]);
+  useEffect(
+    () => () => {
+      clearTimers();
+      disconnectSignaling();
+    },
+    [clearTimers, disconnectSignaling]
+  );
 
   function startTTL(seconds: number) {
     clearTimers();
@@ -85,9 +88,8 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
         }
       }
       if (ev.type === "peer-joined") {
-        setPeerCount((n) => Math.max(2, n + 1));
+        setPeerCount(2);
         setStatusLine("Other device joined the room");
-        // WebRTC handshake would start here
       }
       if (ev.type === "peer-left") {
         setPeerCount((n) => Math.max(1, n - 1));
@@ -109,16 +111,12 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
         );
         setState("error");
       }
-      if (ev.type === "close" && state !== "error" && state !== "idle") {
-        // ignore normal closes after reset
-      }
     });
 
-    await client.connect();
-    client.join(code);
+    // Room is part of the WebSocket URL so Cloudflare routes both peers to the same Durable Object
+    await client.connect(code);
   }
 
-  // Deep link or explicit join from modal
   useEffect(() => {
     const code = (joinCode || initialRoom || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (!code || code.length !== 6) return;
@@ -180,7 +178,6 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
       setStatusLine("Waiting for the other device to join…");
       startTTL(15 * 60);
     } catch (e) {
-      // Still show the code so user can share; join may work when server is up
       setState("waiting");
       setStatusLine(
         e instanceof Error
@@ -363,65 +360,6 @@ export function RoomPanel({ initialRoom, joinCode, onJoinHandled }: RoomPanelPro
               {role === "receiver" ? "Leave room" : "Cancel room"}
             </button>
           </div>
-        </div>
-      )}
-
-      {state === "transfer" && (
-        <div className="p-6 sm:p-8">
-          <div className="flex items-center justify-between mb-5">
-            <span className="text-sm font-medium text-ink">Transferring</span>
-            <span className="text-xs text-muted tabular-nums">{speed}</span>
-          </div>
-          <ul className="space-y-4 mb-6" role="list">
-            {files.map((f) => (
-              <li key={f.name} className="flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="truncate font-medium">{f.name}</span>
-                    <span className="text-muted tabular-nums shrink-0 ml-2">
-                      {formatBytes(f.size)}
-                    </span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-border overflow-hidden">
-                    <div
-                      className={`progress-fill h-full rounded-full ${
-                        f.status === "done" ? "bg-success" : "bg-accent"
-                      }`}
-                      style={{ width: `${Math.round(f.progress * 100)}%` }}
-                    />
-                  </div>
-                </div>
-                <span className="text-xs tabular-nums w-10 text-right shrink-0 text-muted">
-                  {f.status === "done" ? "Done" : `${Math.round(f.progress * 100)}%`}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <div className="rounded-lg border border-border bg-paper/40 p-4">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-muted">Overall</span>
-              <span className="font-medium tabular-nums">{Math.round(overall * 100)}%</span>
-            </div>
-            <div className="h-2 rounded-full bg-border overflow-hidden">
-              <div
-                className="progress-fill h-full bg-accent rounded-full"
-                style={{ width: `${Math.round(overall * 100)}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {state === "complete" && (
-        <div className="p-6 sm:p-8">
-          <p className="font-medium text-ink mb-4">Transfer complete</p>
-          <button
-            type="button"
-            onClick={reset}
-            className="btn-primary h-11 px-5 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover active:bg-accent-pressed transition-colors"
-          >
-            Done
-          </button>
         </div>
       )}
 

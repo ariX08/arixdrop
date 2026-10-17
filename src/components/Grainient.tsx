@@ -15,5 +15,10 @@ const DEFAULT_COLORS = ['#120f17', '#2a0f0a', '#9a3412', '#f97316', '#fed7aa'];
 const TYPES = { linear: 0, radial: 1 };
 const LIFT = 0.2;
 
-// PLACEHOLDER - will use push_files with full content
-export default function Grainient() { return null; }
+const VERTEX = `#version 300 es
+out vec2 vUv;
+void main() {
+  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+  vUv = p;
+  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}`;

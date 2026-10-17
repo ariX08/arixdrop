@@ -13,7 +13,7 @@ export function Header() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2.5" aria-label="Pigeon home">
           <Image src="/logo.svg" alt="" width={28} height={28} className="shrink-0" priority />
-          <span className="font-[family-name:var(--font-instrument)] font-semibold text-lg tracking-tight text-[var(--ink)]">
+          <span className="font-[family-name:var(--font-brand)] font-bold text-lg tracking-tight text-[var(--ink)]">
             Pigeon
           </span>
         </a>

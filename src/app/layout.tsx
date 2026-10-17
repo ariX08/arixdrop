@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
+import { Instrument_Sans, IBM_Plex_Sans, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
 const instrument = Instrument_Sans({
@@ -14,6 +14,13 @@ const ibmPlex = IBM_Plex_Sans({
   variable: "--font-ibm-plex",
   display: "swap",
   weight: ["400", "500", "600"],
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-brand",
+  display: "swap",
+  weight: ["600", "700", "800"],
 });
 
 const jetbrains = JetBrains_Mono({
@@ -41,7 +48,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${instrument.variable} ${ibmPlex.variable} ${jetbrains.variable}`}>
+    <html
+      lang="en"
+      className={`${instrument.variable} ${ibmPlex.variable} ${jakarta.variable} ${jetbrains.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('pigeon-theme');var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="bg-[var(--bg)] text-[var(--ink)] font-[family-name:var(--font-ibm-plex)] antialiased min-h-dvh flex flex-col relative overflow-x-hidden">
         {children}
       </body>

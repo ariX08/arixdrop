@@ -2,40 +2,68 @@
 
 import { useEffect, useState } from "react";
 
+type Mode = "system" | "light" | "dark";
+
+function applyTheme(mode: Mode) {
+  const dark =
+    mode === "dark" ||
+    (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("dark", dark);
+}
+
 export function ThemeToggle() {
-  const [dark, setDark] = useState(false);
+  const [mode, setMode] = useState<Mode>("system");
 
   useEffect(() => {
-    const stored = localStorage.getItem("pigeon-theme");
-    const preferDark =
-      stored === "dark" ||
-      (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    setDark(preferDark);
-    document.documentElement.classList.toggle("dark", preferDark);
+    const stored = (localStorage.getItem("pigeon-theme") as Mode | null) || "system";
+    // migrate old values
+    const next: Mode =
+      stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+    setMode(next);
+    applyTheme(next);
+
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => {
+      const current = (localStorage.getItem("pigeon-theme") as Mode | null) || "system";
+      if (current === "system" || current === null) applyTheme("system");
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  function toggle() {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("pigeon-theme", next ? "dark" : "light");
+  function cycle() {
+    const order: Mode[] = ["system", "light", "dark"];
+    const i = order.indexOf(mode);
+    const next = order[(i + 1) % order.length];
+    setMode(next);
+    localStorage.setItem("pigeon-theme", next);
+    applyTheme(next);
   }
+
+  const label =
+    mode === "system" ? "Theme: system" : mode === "dark" ? "Theme: dark" : "Theme: light";
 
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={cycle}
       className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--accent-soft)] transition"
-      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={label}
+      title={label}
     >
-      {dark ? (
+      {mode === "dark" ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ) : mode === "light" ? (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
           <circle cx="12" cy="12" r="4" />
           <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" strokeLinecap="round" />
         </svg>
       ) : (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <path d="M8 21h8M12 17v4" strokeLinecap="round" />
         </svg>
       )}
     </button>

@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RoomPanel } from "@/components/RoomPanel";
 import { JoinModal } from "@/components/JoinModal";
+import { CookieBanner } from "@/components/CookieBanner";
 import SpecularButton from "@/components/SpecularButton";
 import AnimatedContent from "@/components/AnimatedContent";
 import BlurText from "@/components/BlurText";
@@ -74,11 +75,13 @@ function HomeContent() {
                 transition={{ duration: 0.3 }}
               >
                 <AnimatedContent
-                  distance={36}
+                  distance={40}
                   direction="vertical"
-                  duration={0.7}
+                  duration={0.75}
+                  ease="power3.out"
                   trigger="mount"
-                  stagger={0.08}
+                  stagger={0.09}
+                  blur={4}
                   className="flex flex-col items-center"
                 >
                   <BlurText
@@ -86,10 +89,10 @@ function HomeContent() {
                     animateBy="words"
                     direction="top"
                     trigger="load"
-                    delay={70}
-                    stepDuration={0.3}
-                    blur={10}
-                    distance={24}
+                    delay={80}
+                    stepDuration={0.32}
+                    blur={12}
+                    distance={28}
                     className="font-[family-name:var(--font-instrument)] font-semibold text-4xl sm:text-5xl lg:text-[3.4rem] tracking-tight text-[var(--ink)] leading-[1.15] justify-center"
                   />
 
@@ -139,7 +142,7 @@ function HomeContent() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ type: "spring", stiffness: 280, damping: 28 }}
                 className="max-w-md mx-auto text-left"
               >
                 <RoomPanel
@@ -155,7 +158,7 @@ function HomeContent() {
 
         <section id="how" className="border-t border-[var(--border)] bg-[var(--bg)]/70">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-            <AnimatedContent distance={40} duration={0.65} stagger={0.08} threshold={0.15}>
+            <AnimatedContent distance={48} duration={0.7} stagger={0.1} threshold={0.12}>
               <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-[var(--ink)] text-center mb-12">
                 How it works
               </h2>
@@ -192,6 +195,7 @@ function HomeContent() {
       </main>
 
       <Footer />
+      <CookieBanner />
 
       <JoinModal
         open={joinOpen}

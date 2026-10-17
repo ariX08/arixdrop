@@ -1,35 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 
 export function Header() {
   const [open, setOpen] = useState(false);
-  const [logoFailed, setLogoFailed] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/5 bg-black/30 backdrop-blur-xl">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2.5 group" aria-label="AriXDrop home">
-          {!logoFailed ? (
-            <Image
-              src="/logo.png"
-              alt=""
-              width={28}
-              height={28}
-              className="rounded-lg ring-1 ring-white/10 group-hover:ring-white/20 transition"
-              onError={() => setLogoFailed(true)}
-            />
-          ) : (
-            <span className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M2 7h10M7 2v10" stroke="white" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </span>
-          )}
+        <a href="/" className="flex items-center gap-2.5 group" aria-label="Pigeon home">
+          <span className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-blue-400 group-hover:border-white/20 transition">
+            <svg width="18" height="18" viewBox="0 0 32 32" fill="none" className="text-current">
+              <path d="M6 20c0-6 4.5-11 10-11 3.5 0 6.5 1.8 8.5 4.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+              <path d="M24.5 13.5c1.5-0.5 3-0.2 4 1.2-1.2 0.3-2.5 0.1-3.5-0.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M16 9c1.2-2.5 3.8-3.5 6-2.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <circle cx="20.5" cy="12.2" r="1.1" fill="currentColor"/>
+              <path d="M8 20c2 3 5 5 8 5s6-2 8-5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+              <path d="M12 25c1.5 2 3.5 3 4 3s2.5-1 4-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </span>
           <span className="font-[family-name:var(--font-instrument)] font-semibold text-lg tracking-tight text-white">
-            AriXDrop
+            Pigeon
           </span>
         </a>
 

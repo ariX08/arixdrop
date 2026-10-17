@@ -24,11 +24,11 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AriXDrop — Send files directly",
+  title: "Pigeon — Send files directly",
   description:
     "Transfer files peer-to-peer between devices. No upload, no account, no permanent storage. End-to-end encrypted via WebRTC.",
   openGraph: {
-    title: "AriXDrop — Send files directly",
+    title: "Pigeon — Send files directly",
     description:
       "Fast P2P file transfer. Create a room, share a code or link, files move device-to-device.",
     type: "website",

@@ -4,7 +4,7 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-8">
           <div>
-            <p className="font-[family-name:var(--font-instrument)] font-semibold text-white">AriXDrop</p>
+            <p className="font-[family-name:var(--font-instrument)] font-semibold text-white">Pigeon</p>
             <p className="text-sm text-white/45 mt-1 max-w-xs">
               Peer-to-peer file transfer. No accounts. No permanent storage.
             </p>
@@ -18,7 +18,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm text-white/40">
-          <p>© {new Date().getFullYear()} AriXDrop</p>
+          <p>© {new Date().getFullYear()} Pigeon</p>
           <p>
             Made by{" "}
             <a

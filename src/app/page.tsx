@@ -93,12 +93,13 @@ function HomeContent() {
                     stepDuration={0.32}
                     blur={12}
                     distance={28}
-                    className="font-[family-name:var(--font-instrument)] font-semibold text-4xl sm:text-5xl lg:text-[3.4rem] tracking-tight text-[var(--ink)] leading-[1.15] justify-center"
+                    color="var(--ink)"
+                    className="font-[family-name:var(--font-instrument)] font-semibold text-4xl sm:text-5xl lg:text-[3.4rem] tracking-tight leading-[1.15] justify-center"
                   />
 
                   <p className="mt-5 text-base sm:text-lg text-[var(--muted)] max-w-lg mx-auto leading-relaxed">
                     No upload. No account. Files move peer-to-peer over an encrypted connection and
-                    disappear when you're done.
+                    disappear when you&apos;re done.
                   </p>
 
                   <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -120,7 +121,7 @@ function HomeContent() {
                       size="md"
                       radius={12}
                       tint="#635bff"
-                      tintOpacity={0.12}
+                      tintOpacity={0.14}
                       textColor="var(--ink)"
                       lineColor="#a78bfa"
                       baseColor="#a1a1aa"
@@ -162,7 +163,7 @@ function HomeContent() {
           className="border-t backdrop-blur-sm"
           style={{
             borderColor: "var(--border)",
-            backgroundColor: "color-mix(in srgb, var(--surface) 55%, transparent)",
+            backgroundColor: "var(--section-bg)",
           }}
         >
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20">

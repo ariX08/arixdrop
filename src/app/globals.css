@@ -1,31 +1,32 @@
 @import "tailwindcss";
 
+/* Use .dark class (theme toggle), not prefers-color-scheme alone */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   color-scheme: light;
 
-  --bg: #f4f2fb;
-  --bg-soft: #ebe7f8;
+  --bg: #f3f0fc;
+  --bg-soft: #e9e4f7;
   --surface: #ffffff;
   --surface-elevated: #ffffff;
-  --border: rgba(15, 23, 42, 0.1);
-  --border-strong: rgba(15, 23, 42, 0.18);
-  --ink: #0f1220;
-  --ink-soft: #1e2438;
-  --muted: #5b6478;
-  --muted-soft: #7a8499;
-  --accent: #635bff;
-  --accent-hover: #5249e8;
-  --accent-soft: rgba(99, 91, 255, 0.12);
+  --border: rgba(15, 23, 42, 0.12);
+  --border-strong: rgba(15, 23, 42, 0.2);
+  --ink: #0c0e18;
+  --ink-soft: #1a1f2e;
+  --muted: #4a5568;
+  --muted-soft: #64748b;
+  --accent: #5b53f0;
+  --accent-hover: #4a42d9;
+  --accent-soft: rgba(91, 83, 240, 0.12);
   --success: #0d9488;
   --error: #df1b41;
   --on-accent: #ffffff;
-  --header-bg: rgba(255, 255, 255, 0.72);
-  --header-border: rgba(15, 23, 42, 0.08);
-  --scrim: rgba(255, 255, 255, 0.35);
-  --gradient-a: #e0f2fe;
-  --gradient-b: #fce7f3;
-  --gradient-c: #fef3c7;
-  --gradient-d: #ede9fe;
+  --header-bg: rgba(255, 255, 255, 0.82);
+  --header-border: rgba(15, 23, 42, 0.1);
+  --scrim: rgba(255, 255, 255, 0.45);
+  --bg-gradient: linear-gradient(145deg, #f8f6ff 0%, #efeaff 30%, #e2daff 60%, #d4c8ff 100%);
+  --section-bg: rgba(255, 255, 255, 0.65);
 }
 
 html.dark {
@@ -35,25 +36,23 @@ html.dark {
   --bg-soft: #11131a;
   --surface: #161922;
   --surface-elevated: #1c2030;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.18);
+  --border: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.2);
   --ink: #f6f9fc;
   --ink-soft: #e2e8f0;
-  --muted: #a3acb9;
-  --muted-soft: #7c8698;
-  --accent: #7a73ff;
-  --accent-hover: #8b85ff;
-  --accent-soft: rgba(122, 115, 255, 0.18);
+  --muted: #b0b8c6;
+  --muted-soft: #8b95a8;
+  --accent: #8b85ff;
+  --accent-hover: #9f9aff;
+  --accent-soft: rgba(139, 133, 255, 0.2);
   --success: #2dd4bf;
   --error: #f87171;
   --on-accent: #ffffff;
-  --header-bg: rgba(0, 0, 0, 0.35);
-  --header-border: rgba(255, 255, 255, 0.1);
-  --scrim: rgba(0, 0, 0, 0.4);
-  --gradient-a: #1e1b4b;
-  --gradient-b: #312e81;
-  --gradient-c: #4c1d95;
-  --gradient-d: #0f172a;
+  --header-bg: rgba(8, 8, 12, 0.72);
+  --header-border: rgba(255, 255, 255, 0.12);
+  --scrim: rgba(0, 0, 0, 0.45);
+  --bg-gradient: linear-gradient(125deg, #0c0a12 0%, #1a1025 28%, #2e1654 52%, #4c2a9e 78%, #635bff 100%);
+  --section-bg: rgba(0, 0, 0, 0.35);
 }
 
 html {
@@ -64,15 +63,6 @@ body {
   background-color: transparent;
   color: var(--ink);
   min-height: 100dvh;
-}
-
-.hero-gradient {
-  background:
-    radial-gradient(ellipse 80% 60% at 90% 10%, var(--gradient-c) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 70% 30%, var(--gradient-b) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 50% at 95% 50%, var(--gradient-d) 0%, transparent 45%),
-    radial-gradient(ellipse 50% 40% at 85% 80%, var(--gradient-a) 0%, transparent 50%),
-    var(--bg);
 }
 
 .glass {
@@ -86,7 +76,7 @@ body {
 html.dark .glass {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.3),
-    0 12px 32px rgba(0, 0, 0, 0.4);
+    0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
 :focus-visible {

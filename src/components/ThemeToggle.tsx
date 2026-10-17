@@ -19,9 +19,12 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("pigeon-theme");
-    const next: Mode =
-      stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+    let stored = localStorage.getItem("pigeon-theme");
+    if (stored !== "light" && stored !== "dark" && stored !== "system") {
+      stored = "system";
+      localStorage.setItem("pigeon-theme", "system");
+    }
+    const next = stored as Mode;
     setMode(next);
     applyTheme(next);
     setMounted(true);
@@ -46,10 +49,10 @@ export function ThemeToggle() {
 
   const label =
     mode === "system"
-      ? "Theme: system (click for light)"
+      ? "Theme: system (follows device)"
       : mode === "light"
-        ? "Theme: light (click for dark)"
-        : "Theme: dark (click for system)";
+        ? "Theme: light"
+        : "Theme: dark";
 
   return (
     <button

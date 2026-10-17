@@ -24,7 +24,7 @@ export function Header() {
           </span>
         </a>
 
-        <nav className="hidden sm:flex items-center gap-6 text-sm text-[var(--muted)]" aria-label="Primary">
+        <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-[var(--muted)]" aria-label="Primary">
           <a href="/#how" className="hover:text-[var(--ink)] transition-colors">
             How it works
           </a>
@@ -70,7 +70,7 @@ export function Header() {
               backgroundColor: "var(--surface)",
             }}
           >
-            <nav className="flex flex-col px-4 py-3 text-sm">
+            <nav className="flex flex-col px-4 py-3 text-sm font-medium">
               {[
                 { label: "How it works", href: "/#how" },
                 { label: "Privacy", href: "/privacy" },

@@ -10,11 +10,15 @@ import {
   generateRoomCode,
 } from "@/lib/webrtc";
 import { SignalingClient } from "@/lib/signaling";
+import { Turnstile } from "@marsidev/react-turnstile";
+import { motion, AnimatePresence } from "motion/react";
 
 interface RoomPanelProps {
   joinRequest?: { code: string; nonce: number } | null;
   onJoinHandled?: () => void;
 }
+
+const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
 export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   const [state, setState] = useState<RoomState>("idle");
@@ -33,6 +37,8 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   const [peerCount, setPeerCount] = useState(0);
   const [channelReady, setChannelReady] = useState(false);
   const [sending, setSending] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileReady, setTurnstileReady] = useState(!SITE_KEY); // if no key, skip
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedFilesRef = useRef<File[]>([]);
@@ -43,6 +49,7 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   const roleRef = useRef<"sender" | "receiver" | null>(null);
   const makingOffer = useRef(false);
   const lastJoinNonce = useRef<number>(0);
+  const turnstileRef = useRef<any>(null);
 
   const clearTimers = useCallback(() => {
     if (ttlRef.current) clearInterval(ttlRef.current);
@@ -50,12 +57,8 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   }, []);
 
   const teardownRtc = useCallback(() => {
-    try {
-      channelRef.current?.close();
-    } catch {}
-    try {
-      pcRef.current?.close();
-    } catch {}
+    try { channelRef.current?.close(); } catch {}
+    try { pcRef.current?.close(); } catch {}
     channelRef.current = null;
     pcRef.current = null;
     setChannelReady(false);
@@ -97,9 +100,7 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
     if (pcRef.current) return pcRef.current;
     const pc = createPeerConnection(
       (candidate) => {
-        try {
-          signalingRef.current?.sendIce(candidate.toJSON());
-        } catch {}
+        try { signalingRef.current?.sendIce(candidate.toJSON()); } catch {}
       },
       (s) => {
         if (s === "failed" || s === "disconnected") setStatusLine("Connection interrupted");
@@ -281,7 +282,7 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
     await client.connect(code);
   }
 
-  // Enter code / deep link — always runs when nonce changes
+  // Join via deep link / modal
   useEffect(() => {
     if (!joinRequest) return;
     const code = joinRequest.code.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -291,6 +292,16 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
 
     let cancelled = false;
     (async () => {
+      // Require Turnstile if configured
+      if (SITE_KEY && !turnstileToken) {
+        setStatusLine("Verifying…");
+        // wait a bit for invisible widget
+        await new Promise((r) => setTimeout(r, 800));
+        if (!turnstileToken && !turnstileReady) {
+          // still try — invisible may resolve async
+        }
+      }
+
       clearTimers();
       disconnectSignaling();
       teardownRtc();
@@ -319,9 +330,7 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [joinRequest?.nonce, joinRequest?.code]);
 
@@ -335,6 +344,23 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   }
 
   async function beginSend(selected: File[]) {
+    // Turnstile gate
+    if (SITE_KEY && !turnstileToken) {
+      setStatusLine("Please wait for verification…");
+      // trigger execute if available
+      try {
+        turnstileRef.current?.execute?.();
+      } catch {}
+      // give it a moment
+      await new Promise((r) => setTimeout(r, 1200));
+      if (!turnstileToken) {
+        setErrorTitle("Verification required");
+        setErrorDetail("Cloudflare Turnstile could not verify this action. Please refresh and try again.");
+        setState("error");
+        return;
+      }
+    }
+
     selectedFilesRef.current = selected;
     setPendingNames(selected.map((f) => f.name));
     setRole("sender");
@@ -451,6 +477,9 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
     setRoomLink("");
     selectedFilesRef.current = [];
     if (fileInputRef.current) fileInputRef.current.value = "";
+    // reset turnstile
+    setTurnstileToken(null);
+    try { turnstileRef.current?.reset?.(); } catch {}
   }
 
   function formatTTL(s: number) {
@@ -462,14 +491,8 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   const canSend =
     role === "sender" && peerCount >= 2 && channelReady && !sending && state === "waiting";
 
-  const multiFile = files.length > 1;
-
   return (
-    <div
-      className="bg-surface border border-border rounded-xl shadow-panel overflow-hidden"
-      role="region"
-      aria-label="Transfer room"
-    >
+    <div className="glass rounded-2xl shadow-2xl overflow-hidden" role="region" aria-label="Transfer room">
       <input
         ref={fileInputRef}
         type="file"
@@ -478,214 +501,268 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
         onChange={(e) => handleFilesSelected(e.target.files)}
       />
 
-      {state === "idle" && (
-        <div className="p-6 sm:p-8">
-          <div className="flex items-center justify-between mb-6">
-            <span className="text-sm font-medium text-muted">Room</span>
-            <span className="text-xs text-muted/70 tabular-nums">—</span>
-          </div>
-          <div className="rounded-lg border border-dashed border-border bg-paper/60 min-h-[200px] flex flex-col items-center justify-center gap-3 px-6 text-center">
-            <p className="text-sm text-muted max-w-[24ch]">
-              Choose files to create a room, or enter a code to join one.
-            </p>
-            <button
-              type="button"
-              data-select-files
+      {/* Invisible Turnstile */}
+      {SITE_KEY && (
+        <div className="absolute opacity-0 pointer-events-none h-0 overflow-hidden">
+          <Turnstile
+            ref={turnstileRef}
+            siteKey={SITE_KEY}
+            options={{
+              size: "invisible",
+              appearance: "interaction-only",
+            }}
+            onSuccess={(token) => {
+              setTurnstileToken(token);
+              setTurnstileReady(true);
+            }}
+            onError={() => {
+              setTurnstileReady(false);
+              setTurnstileToken(null);
+            }}
+            onExpire={() => {
+              setTurnstileToken(null);
+              try { turnstileRef.current?.reset?.(); } catch {}
+            }}
+          />
+        </div>
+      )}
+
+      <AnimatePresence mode="wait">
+        {state === "idle" && (
+          <motion.div
+            key="idle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="p-6 sm:p-8"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-sm font-medium text-white/50">Room</span>
+              <span className="text-xs text-white/30 tabular-nums">—</span>
+            </div>
+            <div
+              className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] min-h-[220px] flex flex-col items-center justify-center gap-4 px-6 text-center cursor-pointer hover:bg-white/[0.05] hover:border-white/25 transition-colors"
               onClick={handleSendClick}
-              className="btn-primary mt-2 h-10 px-5 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors"
+              onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-blue-400/50"); }}
+              onDragLeave={(e) => e.currentTarget.classList.remove("border-blue-400/50")}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove("border-blue-400/50");
+                handleFilesSelected(e.dataTransfer.files);
+              }}
             >
-              Select files
-            </button>
-          </div>
-        </div>
-      )}
+              <div className="w-14 h-14 rounded-2xl bg-blue-500/15 flex items-center justify-center">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-blue-400">
+                  <path d="M12 16V8M12 8L8.5 11.5M12 8l3.5 3.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M4 18h16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white/80">Drop files here or click to select</p>
+                <p className="text-xs text-white/40 mt-1">Multiple files supported</p>
+              </div>
+              <button
+                type="button"
+                data-select-files
+                onClick={(e) => { e.stopPropagation(); handleSendClick(); }}
+                className="btn-primary mt-1 h-10 px-5 rounded-xl text-sm"
+              >
+                Select files
+              </button>
+            </div>
+          </motion.div>
+        )}
 
-      {(state === "creating" || state === "connecting") && (
-        <div className="p-6 sm:p-8">
-          <div className="flex items-center justify-between mb-6">
-            <span className="text-sm font-medium text-muted">
-              {state === "connecting" ? "Joining room…" : "Creating room…"}
-            </span>
-            <span className="inline-block w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-          </div>
-          <p className="text-sm text-muted text-center py-8">{statusLine || "Connecting…"}</p>
-        </div>
-      )}
+        {(state === "creating" || state === "connecting") && (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="p-6 sm:p-8"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-sm font-medium text-white/60">
+                {state === "connecting" ? "Joining room…" : "Creating room…"}
+              </span>
+              <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+            <p className="text-sm text-white/40 text-center py-10">{statusLine || "Connecting…"}</p>
+          </motion.div>
+        )}
 
-      {state === "waiting" && (
-        <div className="p-6 sm:p-8">
-          <div className="flex items-center justify-between mb-5">
-            <span className="text-sm font-medium text-ink">
-              {role === "receiver" ? "Joined room" : "Room ready"}
-            </span>
-            <span className="text-xs text-muted tabular-nums">Expires in {formatTTL(ttl)}</span>
-          </div>
+        {state === "waiting" && (
+          <motion.div
+            key="waiting"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="p-6 sm:p-8"
+          >
+            <div className="flex items-center justify-between mb-5">
+              <span className="text-sm font-medium text-white">
+                {role === "receiver" ? "Joined room" : "Room ready"}
+              </span>
+              <span className="text-xs text-white/40 tabular-nums">Expires in {formatTTL(ttl)}</span>
+            </div>
 
-          <div className="mb-6">
-            <label className="block text-xs font-medium text-muted mb-2">Room code</label>
-            <div className="flex items-center gap-3 flex-wrap">
-              <p className="room-code font-display font-semibold text-2xl sm:text-3xl text-ink select-all">
-                {roomCode}
-              </p>
-              {role === "sender" && (
-                <button
-                  type="button"
-                  onClick={() => copy(roomCode, "code")}
-                  className="h-9 px-3 rounded-md border border-border text-sm font-medium hover:bg-paper"
-                >
-                  {copyFeedback === "code" ? "Copied" : "Copy"}
-                </button>
+            <div className="mb-6">
+              <label className="block text-xs font-medium text-white/40 mb-2">Room code</label>
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="room-code font-[family-name:var(--font-instrument)] font-semibold text-2xl sm:text-3xl text-white select-all tracking-widest">
+                  {roomCode}
+                </p>
+                {role === "sender" && (
+                  <button
+                    type="button"
+                    onClick={() => copy(roomCode, "code")}
+                    className="h-9 px-3 rounded-lg border border-white/15 text-sm font-medium text-white/80 hover:bg-white/5 transition"
+                  >
+                    {copyFeedback === "code" ? "Copied" : "Copy"}
+                  </button>
+                )}
+              </div>
+              {role === "sender" && roomLink && (
+                <div className="mt-3 flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={roomLink}
+                    className="flex-1 h-10 px-3 rounded-lg border border-white/10 bg-white/5 text-sm font-mono text-white/70 truncate"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => copy(roomLink, "link")}
+                    className="h-10 px-3 rounded-lg border border-white/15 text-sm font-medium text-white/80 hover:bg-white/5 shrink-0 transition"
+                  >
+                    {copyFeedback === "link" ? "Copied" : "Copy link"}
+                  </button>
+                </div>
               )}
             </div>
-            {role === "sender" && roomLink && (
-              <div className="mt-2 flex gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={roomLink}
-                  className="flex-1 h-10 px-3 rounded-md border border-border bg-paper text-sm font-mono truncate"
-                />
-                <button
-                  type="button"
-                  onClick={() => copy(roomLink, "link")}
-                  className="h-10 px-3 rounded-md border border-border text-sm font-medium hover:bg-paper shrink-0"
-                >
-                  {copyFeedback === "link" ? "Copied" : "Copy link"}
-                </button>
+
+            {role === "sender" && pendingNames.length > 0 && (
+              <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <p className="text-xs font-medium text-white/40 mb-2">Ready to send</p>
+                <ul className="space-y-1">
+                  {pendingNames.map((name) => (
+                    <li key={name} className="text-sm text-white/70 truncate">{name}</li>
+                  ))}
+                </ul>
               </div>
             )}
-          </div>
 
-          {role === "sender" && pendingNames.length > 0 && (
-            <div className="mb-4 rounded-lg border border-border bg-paper/40 p-3">
-              <p className="text-xs font-medium text-muted mb-2">Ready to send</p>
-              <ul className="text-sm space-y-1">
-                {pendingNames.map((name) => (
-                  <li key={name} className="truncate">
-                    {name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="rounded-lg border border-border bg-paper/50 p-4 mb-4">
-            <div className="flex items-center gap-3">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-40" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent" />
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <p className="text-sm text-white/50">{statusLine}</p>
+              <span className="text-xs font-medium tabular-nums text-white/40">
+                {peerCount}/2
               </span>
-              <div className="text-sm text-muted">
-                <p>{statusLine || "Waiting…"}</p>
-                <p className="text-xs mt-1 tabular-nums">{peerCount}/2 devices in room</p>
-              </div>
             </div>
-          </div>
 
-          {role === "sender" && (
+            {role === "sender" && (
+              <button
+                type="button"
+                onClick={sendFilesNow}
+                disabled={!canSend}
+                className="w-full h-12 rounded-xl btn-primary text-base disabled:opacity-40"
+              >
+                {canSend ? "Send files" : "Waiting for connection…"}
+              </button>
+            )}
+
             <button
               type="button"
-              disabled={!canSend}
-              onClick={() => void sendFilesNow()}
-              className="btn-primary w-full h-12 rounded-lg bg-accent text-white font-medium text-base hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed mb-3"
+              onClick={reset}
+              className="w-full mt-3 h-10 rounded-xl text-sm text-white/40 hover:text-white/70 transition"
             >
-              {sending
-                ? "Sending…"
-                : canSend
-                  ? "Send files"
-                  : peerCount < 2
-                    ? "Waiting for other device…"
-                    : "Connecting…"}
+              Cancel
             </button>
-          )}
+          </motion.div>
+        )}
 
-          <button type="button" onClick={reset} className="text-sm text-muted hover:text-ink underline-offset-2 hover:underline">
-            {role === "receiver" ? "Leave room" : "Cancel room"}
-          </button>
-        </div>
-      )}
+        {(state === "transfer" || state === "complete") && (
+          <motion.div
+            key="transfer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="p-6 sm:p-8"
+          >
+            <div className="flex items-center justify-between mb-5">
+              <span className="text-sm font-medium text-white">
+                {state === "complete" ? "Transfer complete" : "Transferring…"}
+              </span>
+              <span className="text-xs text-white/40 tabular-nums">{speed}</span>
+            </div>
 
-      {state === "transfer" && (
-        <div className="p-6 sm:p-8">
-          <div className="flex items-center justify-between mb-5">
-            <span className="text-sm font-medium text-ink">
-              {role === "receiver" ? "Receiving" : "Sending"}
-            </span>
-            <span className="text-xs text-muted tabular-nums">{speed}</span>
-          </div>
-
-          {/* One bar per file; overall only if multiple files */}
-          <ul className="space-y-4">
-            {files.map((f) => (
-              <li key={f.name}>
-                <div className="flex justify-between text-sm mb-1.5 gap-3">
-                  <span className="truncate font-medium">{f.name}</span>
-                  <span className="text-muted tabular-nums shrink-0">
-                    {formatBytes(f.size)}
-                    {" · "}
-                    {f.status === "done" ? "Done" : `${Math.round(f.progress * 100)}%`}
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-border overflow-hidden">
-                  <div
-                    className={`progress-fill h-full rounded-full ${
-                      f.status === "done" ? "bg-success" : "bg-accent"
-                    }`}
-                    style={{ width: `${Math.round(f.progress * 100)}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          {multiFile && (
-            <div className="mt-5 pt-4 border-t border-border">
-              <div className="flex justify-between text-sm mb-1.5">
-                <span className="text-muted">Overall</span>
-                <span className="font-medium tabular-nums">{Math.round(overall * 100)}%</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-border overflow-hidden">
+            {/* Overall progress */}
+            <div className="mb-5">
+              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
                 <div
-                  className="progress-fill h-full bg-accent rounded-full"
+                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 progress-fill"
                   style={{ width: `${Math.round(overall * 100)}%` }}
                 />
               </div>
+              <p className="text-xs text-white/40 mt-1.5 tabular-nums">{Math.round(overall * 100)}%</p>
             </div>
-          )}
-        </div>
-      )}
 
-      {state === "complete" && (
-        <div className="p-6 sm:p-8">
-          <p className="font-medium text-ink mb-2">
-            {role === "receiver" ? "Files received" : "Transfer complete"}
-          </p>
-          <p className="text-sm text-muted mb-5">
-            {role === "receiver" ? "Check your downloads." : "The other device should have the files."}
-          </p>
-          <button
-            type="button"
-            onClick={reset}
-            className="btn-primary h-11 px-5 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover"
-          >
-            Done
-          </button>
-        </div>
-      )}
+            <ul className="space-y-3 max-h-48 overflow-y-auto">
+              {files.map((f) => (
+                <li key={f.name} className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white/80 truncate">{f.name}</p>
+                    <div className="h-1 mt-1 rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-blue-400/80 progress-fill"
+                        style={{ width: `${Math.round(f.progress * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="text-xs text-white/40 tabular-nums shrink-0">
+                    {f.status === "done" ? "Done" : formatBytes(f.size)}
+                  </span>
+                </li>
+              ))}
+            </ul>
 
-      {state === "error" && (
-        <div className="p-6 sm:p-8">
-          <p className="font-medium text-ink">{errorTitle}</p>
-          <p className="text-sm text-muted mt-1 mb-5">{errorDetail}</p>
-          <button
-            type="button"
-            onClick={reset}
-            className="btn-primary h-11 px-5 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover"
+            {state === "complete" && (
+              <button
+                type="button"
+                onClick={reset}
+                className="w-full mt-6 h-11 rounded-xl btn-primary text-sm"
+              >
+                Send more files
+              </button>
+            )}
+          </motion.div>
+        )}
+
+        {state === "error" && (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="p-6 sm:p-8 text-center"
           >
-            Back
-          </button>
-        </div>
-      )}
+            <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-400">
+                <path d="M12 8v5M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+            </div>
+            <h3 className="font-medium text-white mb-1">{errorTitle}</h3>
+            <p className="text-sm text-white/50 mb-6">{errorDetail}</p>
+            <button
+              type="button"
+              onClick={reset}
+              className="h-11 px-6 rounded-xl btn-primary text-sm"
+            >
+              Try again
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -13,7 +13,7 @@ export async function prepareFilesForTransfer(files: File[]): Promise<File[]> {
   }
 
   const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
-  const zipName = `arixdrop-${Date.now()}.zip`;
+  const zipName = `pigeon-${Date.now()}.zip`;
   const zipFile = new File([blob], zipName, { type: "application/zip" });
 
   return [zipFile];

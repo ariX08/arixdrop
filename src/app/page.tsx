@@ -21,28 +21,30 @@ function HomeContent() {
 
   return (
     <>
-      {/* Full-site animated background */}
+      {/* Full-site animated background — tuned to match the dense cyan→blue→black look */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <GradientASCII
-          colors={['#0a1628', '#1e3a8a', '#3b82f6', '#60a5fa']}
+          colors={['#67e8f9', '#22d3ee', '#3b82f6', '#1e3a8a']}
           shape="horizon"
-          characters=" =+xX0S8#@"
-          cellSize={16}
-          density={0.75}
-          glyphOpacity={0.7}
-          gradientOpacity={0.85}
-          glow={0.15}
-          flicker={0.15}
-          softness={0.6}
-          scale={1.1}
-          flow={0.4}
-          speed={0.6}
-          grain={0.06}
+          characters="  .=+xX0S8#@"
+          cellSize={14}
+          density={0.92}
+          glyphOpacity={0.9}
+          gradientOpacity={0.95}
+          glow={0.25}
+          flicker={0.12}
+          softness={0.55}
+          scale={1.15}
+          flow={0.35}
+          speed={0.45}
+          grain={0.04}
+          depthOfField={0.15}
           mouseInteraction={true}
           intro={true}
           className="w-full h-full"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
+        {/* Strong bottom fade like the reference */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/90" />
       </div>
 
       <a
@@ -125,7 +127,7 @@ function HomeContent() {
                 {
                   n: "01",
                   title: "Create a room",
-                  body: "Select files. AriXDrop generates a 6-character code and a one-time link.",
+                  body: "Select files. Pigeon generates a 6-character code and a one-time link.",
                 },
                 {
                   n: "02",

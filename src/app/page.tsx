@@ -7,6 +7,8 @@ import { Footer } from "@/components/Footer";
 import { RoomPanel } from "@/components/RoomPanel";
 import { JoinModal } from "@/components/JoinModal";
 import GradientASCII from "@/components/GradientASCII";
+import SpecularButton from "@/components/SpecularButton";
+import AnimatedContent from "@/components/AnimatedContent";
 import { motion } from "motion/react";
 
 function HomeContent() {
@@ -21,7 +23,6 @@ function HomeContent() {
 
   return (
     <>
-      {/* Exact React Bits GradientASCII with the props you specified */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <GradientASCII
           colors={['#1e3fd8', '#f6f8ff', '#a5d8ff', '#38bdf8']}
@@ -47,11 +48,13 @@ function HomeContent() {
       <main id="main" className="flex-1 relative">
         <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-16 sm:pb-24">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-            <motion.div
+            <AnimatedContent
               className="lg:col-span-5 pt-1"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              distance={40}
+              direction="vertical"
+              duration={0.7}
+              trigger="mount"
+              stagger={0.08}
             >
               <h1 className="font-[family-name:var(--font-instrument)] font-semibold text-3xl sm:text-4xl lg:text-[2.75rem] tracking-tight text-[var(--ink)] leading-[1.15] max-w-[16ch]">
                 Send files directly between devices
@@ -60,20 +63,23 @@ function HomeContent() {
                 No upload. No account. Files move peer-to-peer over an encrypted connection and disappear when you&apos;re done.
               </p>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                <button
-                  type="button"
+              <div className="mt-8 flex flex-col sm:flex-row gap-3 items-start">
+                <SpecularButton
+                  size="md"
+                  radius={14}
+                  tint="#3b82f6"
+                  tintOpacity={0.95}
+                  textColor="#ffffff"
+                  lineColor="#93c5fd"
+                  baseColor="#1e40af"
+                  intensity={1.1}
+                  idleIntensity={0.4}
                   onClick={() => {
                     document.querySelector<HTMLButtonElement>("[data-select-files]")?.click();
                   }}
-                  className="btn-primary inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl text-base"
                 >
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                    <path d="M9 12V4M9 4L5.5 7.5M9 4l3.5 3.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M3 14h12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-                  </svg>
                   Send files
-                </button>
+                </SpecularButton>
                 <button
                   type="button"
                   onClick={() => setJoinOpen(true)}
@@ -86,7 +92,7 @@ function HomeContent() {
               <p className="mt-5 text-sm text-[var(--muted)]">
                 Works on the same network or across the internet. Room expires after transfer.
               </p>
-            </motion.div>
+            </AnimatedContent>
 
             <motion.div
               className="lg:col-span-7"
@@ -104,36 +110,38 @@ function HomeContent() {
 
         <section id="how" className="border-t border-[var(--border)]">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-[var(--ink)] mb-10">
-              How it works
-            </h2>
-            <ol className="grid sm:grid-cols-3 gap-8 list-none">
-              {[
-                {
-                  n: "01",
-                  title: "Create a room",
-                  body: "Select files. Pigeon generates a 6-character code and a one-time link.",
-                },
-                {
-                  n: "02",
-                  title: "Share the code",
-                  body: "The recipient opens the link or types the code. Devices negotiate a direct connection.",
-                },
-                {
-                  n: "03",
-                  title: "Send & done",
-                  body: "When both devices are in the room, press Send. Data moves device-to-device.",
-                },
-              ].map((item) => (
-                <li key={item.n} className="relative">
-                  <span className="font-[family-name:var(--font-instrument)] font-semibold text-blue-500 text-sm tabular-nums mb-2 block">
-                    {item.n}
-                  </span>
-                  <h3 className="font-medium text-[var(--ink)] mb-1.5">{item.title}</h3>
-                  <p className="text-sm text-[var(--muted)] leading-relaxed">{item.body}</p>
-                </li>
-              ))}
-            </ol>
+            <AnimatedContent distance={50} duration={0.7} stagger={0.1} threshold={0.15}>
+              <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-[var(--ink)] mb-10">
+                How it works
+              </h2>
+              <ol className="grid sm:grid-cols-3 gap-8 list-none">
+                {[
+                  {
+                    n: "01",
+                    title: "Create a room",
+                    body: "Select files. Pigeon generates a 6-character code and a one-time link.",
+                  },
+                  {
+                    n: "02",
+                    title: "Share the code",
+                    body: "The recipient opens the link or types the code. Devices negotiate a direct connection.",
+                  },
+                  {
+                    n: "03",
+                    title: "Send & done",
+                    body: "When both devices are in the room, press Send. Data moves device-to-device.",
+                  },
+                ].map((item) => (
+                  <li key={item.n} className="relative">
+                    <span className="font-[family-name:var(--font-instrument)] font-semibold text-blue-500 text-sm tabular-nums mb-2 block">
+                      {item.n}
+                    </span>
+                    <h3 className="font-medium text-[var(--ink)] mb-1.5">{item.title}</h3>
+                    <p className="text-sm text-[var(--muted)] leading-relaxed">{item.body}</p>
+                  </li>
+                ))}
+              </ol>
+            </AnimatedContent>
           </div>
         </section>
       </main>

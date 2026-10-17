@@ -13,6 +13,7 @@ import { SignalingClient } from "@/lib/signaling";
 import { prepareFilesForTransfer } from "@/lib/zip";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { motion, AnimatePresence } from "motion/react";
+import SpecularButton from "@/components/SpecularButton";
 
 interface RoomPanelProps {
   joinRequest?: { code: string; nonce: number } | null;
@@ -24,7 +25,7 @@ interface RoomPanelProps {
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
 export function RoomPanel({ joinRequest, initialFiles, onJoinHandled, onReset }: RoomPanelProps) {
-  const [state, setState] = useState<RoomState>(initialFiles?.length ? "idle" : "idle");
+  const [state, setState] = useState<RoomState>("idle");
   const [role, setRole] = useState<"sender" | "receiver" | null>(null);
   const [roomCode, setRoomCode] = useState("");
   const [roomLink, setRoomLink] = useState("");
@@ -525,14 +526,24 @@ export function RoomPanel({ joinRequest, initialFiles, onJoinHandled, onReset }:
               onExpire={() => setTurnstileToken(null)}
             />
 
-            <button
-              type="button"
-              onClick={confirmAndCreateRoom}
-              disabled={!canCreate}
-              className="w-full mt-4 h-12 rounded-xl btn-primary text-base disabled:opacity-40"
-            >
-              {canCreate ? "Create room" : "Complete verification…"}
-            </button>
+            <div className="mt-4">
+              <SpecularButton
+                size="md"
+                radius={14}
+                tint="#3b82f6"
+                tintOpacity={0.95}
+                textColor="#ffffff"
+                lineColor="#93c5fd"
+                baseColor="#1e40af"
+                intensity={1.1}
+                idleIntensity={0.4}
+                disabled={!canCreate}
+                className="w-full"
+                onClick={confirmAndCreateRoom}
+              >
+                {canCreate ? "Create room" : "Complete verification…"}
+              </SpecularButton>
+            </div>
           </motion.div>
         )}
 
@@ -596,9 +607,22 @@ export function RoomPanel({ joinRequest, initialFiles, onJoinHandled, onReset }:
             </div>
 
             {role === "sender" && (
-              <button type="button" onClick={sendFilesNow} disabled={!canSend} className="w-full h-12 rounded-xl btn-primary text-base disabled:opacity-40">
+              <SpecularButton
+                size="md"
+                radius={14}
+                tint="#3b82f6"
+                tintOpacity={0.95}
+                textColor="#ffffff"
+                lineColor="#93c5fd"
+                baseColor="#1e40af"
+                intensity={1.1}
+                idleIntensity={0.4}
+                disabled={!canSend}
+                className="w-full"
+                onClick={sendFilesNow}
+              >
                 {canSend ? "Send files" : "Waiting for connection…"}
-              </button>
+              </SpecularButton>
             )}
 
             <button type="button" onClick={reset} className="w-full mt-3 h-10 rounded-xl text-sm text-white/40 hover:text-white/70 transition">
@@ -607,17 +631,17 @@ export function RoomPanel({ joinRequest, initialFiles, onJoinHandled, onReset }:
           </motion.div>
         )}
 
-        {!awaitingVerify && (state === "transfer" || state === "complete") && (
+        {!awaitingVerify && state === "transfer" && (
           <motion.div key="transfer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-5">
               <span className="text-sm font-medium text-white">
-                {state === "complete" ? "Transfer complete" : "Transferring…"}
+                {role === "receiver" ? "Receiving…" : "Sending…"}
               </span>
               <span className="text-xs text-white/40 tabular-nums">{speed}</span>
             </div>
 
             <div className="mb-5">
-              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+              <div className="h-2.5 rounded-full bg-white/10 overflow-hidden">
                 <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 progress-fill" style={{ width: `${Math.round(overall * 100)}%` }} />
               </div>
               <p className="text-xs text-white/40 mt-1.5 tabular-nums">{Math.round(overall * 100)}%</p>
@@ -638,12 +662,51 @@ export function RoomPanel({ joinRequest, initialFiles, onJoinHandled, onReset }:
                 </li>
               ))}
             </ul>
+          </motion.div>
+        )}
 
-            {state === "complete" && (
-              <button type="button" onClick={reset} className="w-full mt-6 h-11 rounded-xl btn-primary text-sm">
-                Send more files
-              </button>
-            )}
+        {!awaitingVerify && state === "complete" && (
+          <motion.div key="complete" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8 text-center">
+            <div className="w-14 h-14 rounded-full bg-blue-500/15 border border-blue-400/30 flex items-center justify-center mx-auto mb-4">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-blue-400">
+                <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h3 className="font-[family-name:var(--font-instrument)] font-semibold text-xl text-white mb-1">
+              {role === "receiver" ? "Files received" : "Transfer complete"}
+            </h3>
+            <p className="text-sm text-white/50 mb-5 max-w-[28ch] mx-auto">
+              {role === "receiver"
+                ? "Downloads started on this device. You can close this tab."
+                : "Your files were delivered peer-to-peer. Nothing stayed on a server."}
+            </p>
+
+            <ul className="text-left space-y-2 mb-6 max-h-36 overflow-y-auto rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              {files.map((f) => (
+                <li key={f.name} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-white/80 truncate">{f.name}</span>
+                  <span className="text-xs text-blue-400 shrink-0 tabular-nums">
+                    {f.status === "done" ? "Done" : formatBytes(f.size)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <SpecularButton
+              size="md"
+              radius={14}
+              tint="#3b82f6"
+              tintOpacity={0.95}
+              textColor="#ffffff"
+              lineColor="#93c5fd"
+              baseColor="#1e40af"
+              intensity={1.1}
+              idleIntensity={0.4}
+              className="w-full"
+              onClick={reset}
+            >
+              {role === "receiver" ? "Done" : "Send more files"}
+            </SpecularButton>
           </motion.div>
         )}
 
@@ -657,9 +720,20 @@ export function RoomPanel({ joinRequest, initialFiles, onJoinHandled, onReset }:
             </div>
             <h3 className="font-medium text-white mb-1">{errorTitle}</h3>
             <p className="text-sm text-white/50 mb-6">{errorDetail}</p>
-            <button type="button" onClick={reset} className="h-11 px-6 rounded-xl btn-primary text-sm">
+            <SpecularButton
+              size="md"
+              radius={14}
+              tint="#3b82f6"
+              tintOpacity={0.95}
+              textColor="#ffffff"
+              lineColor="#93c5fd"
+              baseColor="#1e40af"
+              intensity={1.1}
+              idleIntensity={0.4}
+              onClick={reset}
+            >
               Try again
-            </button>
+            </SpecularButton>
           </motion.div>
         )}
 

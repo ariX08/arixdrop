@@ -57,7 +57,7 @@ export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModal
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={onClose}
             aria-hidden
           />
@@ -66,16 +66,16 @@ export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModal
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.98 }}
             transition={{ type: "spring", duration: 0.4, bounce: 0.25 }}
-            className="relative w-full max-w-md rounded-2xl glass p-6 sm:p-8 shadow-2xl"
+            className="relative w-full max-w-md rounded-2xl glass p-6 sm:p-8"
           >
-            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-xl text-white mb-1">
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-xl text-[var(--ink)] mb-1">
               Enter room code
             </h2>
-            <p className="text-sm text-white/50 mb-6">
+            <p className="text-sm text-[var(--muted)] mb-6">
               Type the 6-character code from the sender.
             </p>
 
-            <div className="flex justify-center mb-5">
+            <div className="flex justify-center mb-5 overflow-x-auto">
               <CodeSlots
                 length={6}
                 value={code}
@@ -88,26 +88,28 @@ export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModal
                 }}
                 status={status}
                 autoFocus
-                accentColor="#3b82f6"
-                inkColor="#93c5fd"
-                slotColor="rgba(255,255,255,0.06)"
-                digitColor="#ffffff"
-                dangerColor="#ef4444"
-                slotSize={48}
-                gap={10}
-                radius={14}
+                accentColor="#635bff"
+                inkColor="#635bff"
+                slotColor="rgba(99, 91, 255, 0.1)"
+                digitColor="var(--ink)"
+                dangerColor="#df1b41"
+                slotSize={44}
+                gap={8}
+                radius={12}
                 ariaLabel="Room code"
               />
             </div>
 
-            <TurnstileWidget
-              onSuccess={(t) => {
-                setToken(t);
-                setStatus("idle");
-              }}
-              onError={() => setToken(null)}
-              onExpire={() => setToken(null)}
-            />
+            <div className="flex justify-center mb-2">
+              <TurnstileWidget
+                onSuccess={(t) => {
+                  setToken(t);
+                  setStatus("idle");
+                }}
+                onError={() => setToken(null)}
+                onExpire={() => setToken(null)}
+              />
+            </div>
 
             <div className="flex gap-3 mt-4">
               <button

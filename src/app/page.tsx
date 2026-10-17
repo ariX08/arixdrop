@@ -6,6 +6,10 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RoomPanel } from "@/components/RoomPanel";
 import { JoinModal } from "@/components/JoinModal";
+import SpecularButton from "@/components/SpecularButton";
+import AnimatedContent from "@/components/AnimatedContent";
+import BlurText from "@/components/BlurText";
+import { motion, AnimatePresence } from "motion/react";
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -60,38 +64,95 @@ function HomeContent() {
         />
 
         <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 sm:pt-28 pb-20 text-center hero-on-field">
-          {!sessionActive ? (
-            <>
-              <h1 className="font-[family-name:var(--font-instrument)] font-semibold text-4xl sm:text-5xl lg:text-[3.4rem] tracking-tight leading-[1.15]">
-                Send files directly between devices
-              </h1>
+          <AnimatePresence mode="wait">
+            {!sessionActive ? (
+              <motion.div
+                key="hero"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.3 }}
+              >
+                <AnimatedContent
+                  distance={40}
+                  direction="vertical"
+                  duration={0.75}
+                  ease="power3.out"
+                  trigger="mount"
+                  stagger={0.09}
+                  blur={4}
+                  className="flex flex-col items-center"
+                >
+                  <BlurText
+                    text="Send files directly between devices"
+                    animateBy="words"
+                    direction="top"
+                    trigger="load"
+                    delay={80}
+                    stepDuration={0.32}
+                    blur={12}
+                    distance={28}
+                    color="#ffffff"
+                    className="font-[family-name:var(--font-instrument)] font-semibold text-4xl sm:text-5xl lg:text-[3.4rem] tracking-tight leading-[1.15] justify-center"
+                  />
 
-              <p className="mt-5 text-base sm:text-lg hero-muted max-w-lg mx-auto leading-relaxed">
-                No upload. No account. Files move peer-to-peer over an encrypted connection and
-                disappear when you&apos;re done.
-              </p>
+                  <p className="mt-5 text-base sm:text-lg hero-muted max-w-lg mx-auto leading-relaxed">
+                    No upload. No account. Files move peer-to-peer over an encrypted connection and
+                    disappear when you&apos;re done.
+                  </p>
 
-              <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <button type="button" className="btn-primary" onClick={onHeroSend}>
-                  Send files →
-                </button>
-                <button type="button" className="btn-ghost" onClick={() => setJoinOpen(true)}>
-                  Enter code
-                </button>
-              </div>
+                  <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <SpecularButton
+                      size="md"
+                      radius={12}
+                      tint="#ffffff"
+                      tintOpacity={0.98}
+                      textColor="#1d1d1f"
+                      lineColor="#ffffff"
+                      baseColor="#a1a1aa"
+                      intensity={1.15}
+                      idleIntensity={0.45}
+                      onClick={onHeroSend}
+                    >
+                      Send files →
+                    </SpecularButton>
+                    <SpecularButton
+                      size="md"
+                      radius={12}
+                      tint="#ffffff"
+                      tintOpacity={0.22}
+                      textColor="#ffffff"
+                      lineColor="#e0e0ff"
+                      baseColor="#a1a1aa"
+                      intensity={0.9}
+                      idleIntensity={0.35}
+                      onClick={() => setJoinOpen(true)}
+                    >
+                      Enter code
+                    </SpecularButton>
+                  </div>
 
-              <p className="mt-8 text-sm hero-soft">Works on the same network or across the internet.</p>
-            </>
-          ) : (
-            <div className="max-w-md mx-auto text-left">
-              <RoomPanel
-                joinRequest={joinRequest}
-                initialFiles={pendingFiles}
-                onJoinHandled={() => {}}
-                onReset={onSessionReset}
-              />
-            </div>
-          )}
+                  <p className="mt-8 text-sm hero-soft">Works on the same network or across the internet.</p>
+                </AnimatedContent>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="room"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: "spring", stiffness: 280, damping: 28 }}
+                className="max-w-md mx-auto text-left"
+              >
+                <RoomPanel
+                  joinRequest={joinRequest}
+                  initialFiles={pendingFiles}
+                  onJoinHandled={() => {}}
+                  onReset={onSessionReset}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
 
         <section
@@ -103,36 +164,38 @@ function HomeContent() {
           }}
         >
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20 hero-on-field">
-            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-center mb-12">
-              How it works
-            </h2>
-            <ol className="grid sm:grid-cols-3 gap-10 list-none">
-              {[
-                {
-                  n: "01",
-                  title: "Create a room",
-                  body: "Select files. Pigeon generates a 6-character code and a one-time link.",
-                },
-                {
-                  n: "02",
-                  title: "Share the code",
-                  body: "The recipient opens the link or types the code. Devices negotiate a direct connection.",
-                },
-                {
-                  n: "03",
-                  title: "Send & done",
-                  body: "When both devices are in the room, press Send. Data moves device-to-device.",
-                },
-              ].map((item) => (
-                <li key={item.n}>
-                  <span className="font-[family-name:var(--font-instrument)] font-semibold text-white/80 text-sm tabular-nums mb-2 block">
-                    {item.n}
-                  </span>
-                  <h3 className="font-medium mb-1.5">{item.title}</h3>
-                  <p className="text-sm hero-muted leading-relaxed">{item.body}</p>
-                </li>
-              ))}
-            </ol>
+            <AnimatedContent distance={48} duration={0.7} stagger={0.1} threshold={0.12}>
+              <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-center mb-12">
+                How it works
+              </h2>
+              <ol className="grid sm:grid-cols-3 gap-10 list-none">
+                {[
+                  {
+                    n: "01",
+                    title: "Create a room",
+                    body: "Select files. Pigeon generates a 6-character code and a one-time link.",
+                  },
+                  {
+                    n: "02",
+                    title: "Share the code",
+                    body: "The recipient opens the link or types the code. Devices negotiate a direct connection.",
+                  },
+                  {
+                    n: "03",
+                    title: "Send & done",
+                    body: "When both devices are in the room, press Send. Data moves device-to-device.",
+                  },
+                ].map((item) => (
+                  <li key={item.n}>
+                    <span className="font-[family-name:var(--font-instrument)] font-semibold text-white/80 text-sm tabular-nums mb-2 block">
+                      {item.n}
+                    </span>
+                    <h3 className="font-medium mb-1.5">{item.title}</h3>
+                    <p className="text-sm hero-muted leading-relaxed">{item.body}</p>
+                  </li>
+                ))}
+              </ol>
+            </AnimatedContent>
           </div>
         </section>
       </main>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, IBM_Plex_Sans } from "next/font/google";
+import { Instrument_Sans, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const instrument = Instrument_Sans({
@@ -12,6 +12,13 @@ const instrument = Instrument_Sans({
 const ibmPlex = IBM_Plex_Sans({
   subsets: ["latin"],
   variable: "--font-ibm-plex",
+  display: "swap",
+  weight: ["400", "500", "600"],
+});
+
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
   display: "swap",
   weight: ["400", "500", "600"],
 });
@@ -34,8 +41,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${instrument.variable} ${ibmPlex.variable}`}>
-      <body className="bg-paper text-ink font-body antialiased min-h-screen flex flex-col">
+    <html lang="en" className={`${instrument.variable} ${ibmPlex.variable} ${jetbrains.variable}`}>
+      <body className="bg-[var(--bg)] text-[var(--ink)] font-[family-name:var(--font-ibm-plex)] antialiased min-h-dvh flex flex-col relative overflow-x-hidden">
         {children}
       </body>
     </html>

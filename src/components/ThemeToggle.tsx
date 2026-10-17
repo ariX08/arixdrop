@@ -97,7 +97,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={cycle}
-      className="inline-flex items-center justify-center p-2 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--accent-soft)] border border-transparent hover:border-[var(--border)]"
+      className="inline-flex items-center justify-center p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/20"
       aria-label={label}
       title={label}
       suppressHydrationWarning

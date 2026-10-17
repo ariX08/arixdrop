@@ -3,10 +3,9 @@
 :root {
   color-scheme: dark;
 
-  /* Always-dark canvas for GradientASCII */
   --bg: #05070f;
   --bg-elevated: #0c101c;
-  --surface: rgba(12, 16, 28, 0.82);
+  --surface: rgba(12, 16, 28, 0.88);
   --surface-solid: #0f1423;
   --border: rgba(255, 255, 255, 0.1);
   --border-strong: rgba(255, 255, 255, 0.18);
@@ -18,19 +17,6 @@
   --success: #22c55e;
   --error: #ef4444;
   --scrim: rgba(0, 0, 0, 0.5);
-}
-
-/* Light mode: lighter surfaces, stronger text, same dark page bg */
-html.light {
-  color-scheme: light;
-  --surface: rgba(255, 255, 255, 0.92);
-  --surface-solid: #ffffff;
-  --border: rgba(15, 23, 42, 0.1);
-  --border-strong: rgba(15, 23, 42, 0.18);
-  --ink: #0f172a;
-  --muted: #475569;
-  --accent-soft: rgba(37, 99, 235, 0.12);
-  --scrim: rgba(0, 0, 0, 0.4);
 }
 
 html {
@@ -48,13 +34,6 @@ body {
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   border: 1px solid var(--border);
-}
-
-.glass-strong {
-  background: var(--surface-solid);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
-  border: 1px solid var(--border-strong);
 }
 
 :focus-visible {
@@ -128,7 +107,4 @@ input:focus:not(:focus-visible) {
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.14);
   border-radius: 4px;
-}
-html.light ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.18);
 }

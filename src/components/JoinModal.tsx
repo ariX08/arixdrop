@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import CodeSlots from "./CodeSlots";
 
 interface JoinModalProps {
   open: boolean;
@@ -11,14 +13,12 @@ interface JoinModalProps {
 
 export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModalProps) {
   const [code, setCode] = useState(initialCode);
-  const [error, setError] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState<"idle" | "error" | "success">("idle");
 
   useEffect(() => {
     if (open) {
-      setCode(initialCode.toUpperCase().slice(0, 6));
-      setError("");
-      setTimeout(() => inputRef.current?.focus(), 50);
+      setCode(initialCode.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6));
+      setStatus("idle");
     }
   }, [open, initialCode]);
 
@@ -30,80 +30,83 @@ export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModal
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
-
-  function handleChange(v: string) {
-    const cleaned = v.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase();
-    setCode(cleaned);
-    setError("");
-  }
-
-  function handleSubmit() {
-    if (code.length !== 6) {
-      setError("Enter a 6-character code");
-      return;
+  function handleComplete(value: string) {
+    const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (cleaned.length === 6) {
+      setStatus("success");
+      setTimeout(() => onJoin(cleaned), 400);
     }
-    onJoin(code);
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="join-title"
-    >
-      <div className="absolute inset-0 bg-ink/40" onClick={onClose} aria-hidden />
-      <div className="relative bg-surface rounded-xl shadow-panel-hover w-full max-w-md p-6 sm:p-7 border border-border">
-        <h2 id="join-title" className="font-display font-semibold text-xl mb-1">
-          Enter room code
-        </h2>
-        <p className="text-sm text-muted mb-5">
-          Type the 6-character code from the sender.
-        </p>
-        <label htmlFor="join-code-input" className="block text-xs font-medium text-muted mb-1.5">
-          Code
-        </label>
-        <input
-          ref={inputRef}
-          id="join-code-input"
-          type="text"
-          maxLength={6}
-          autoComplete="off"
-          spellCheck={false}
-          value={code}
-          onChange={(e) => handleChange(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-          className="w-full h-12 px-4 rounded-lg border border-border bg-paper font-display font-semibold text-2xl room-code text-center tracking-widest uppercase focus:border-accent placeholder:text-border"
-          placeholder="······"
-          aria-describedby="join-hint"
-        />
-        <p id="join-hint" className="mt-2 text-xs text-muted">
-          Letters and numbers, case-insensitive
-        </p>
-        {error && (
-          <p className="mt-2 text-sm text-error" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="mt-6 flex gap-3">
-          <button
-            type="button"
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
-            className="flex-1 h-11 rounded-lg border border-border font-medium text-sm hover:bg-paper transition-colors"
+            aria-hidden
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.98 }}
+            transition={{ type: "spring", duration: 0.4, bounce: 0.25 }}
+            className="relative w-full max-w-md rounded-2xl glass-strong p-6 sm:p-8 shadow-2xl"
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={code.length !== 6}
-            className="flex-1 h-11 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover active:bg-accent-pressed disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Join room
-          </button>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-xl text-white mb-1">
+              Enter room code
+            </h2>
+            <p className="text-sm text-white/50 mb-6">
+              Type the 6-character code from the sender.
+            </p>
+
+            <div className="flex justify-center mb-6">
+              <CodeSlots
+                length={6}
+                value={code}
+                onChange={(v) => {
+                  setCode(v.toUpperCase());
+                  setStatus("idle");
+                }}
+                onComplete={handleComplete}
+                status={status}
+                autoFocus
+                accentColor="#3b82f6"
+                inkColor="#93c5fd"
+                slotColor="rgba(255,255,255,0.06)"
+                digitColor="#ffffff"
+                dangerColor="#ef4444"
+                slotSize={48}
+                gap={10}
+                radius={14}
+                ariaLabel="Room code"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 h-11 rounded-xl btn-ghost text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleComplete(code)}
+                disabled={code.replace(/[^A-Z0-9]/gi, "").length !== 6}
+                className="flex-1 h-11 rounded-xl btn-primary text-sm"
+              >
+                Join room
+              </button>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }

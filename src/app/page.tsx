@@ -6,12 +6,13 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RoomPanel } from "@/components/RoomPanel";
 import { JoinModal } from "@/components/JoinModal";
+import GradientASCII from "@/components/GradientASCII";
+import { motion } from "motion/react";
 
 function HomeContent() {
   const searchParams = useSearchParams();
   const initialRoom = searchParams.get("room");
   const [joinOpen, setJoinOpen] = useState(false);
-  // nonce forces RoomPanel to re-run join even if same code is entered twice
   const [joinRequest, setJoinRequest] = useState<{ code: string; nonce: number } | null>(
     initialRoom && /^[A-Za-z0-9]{6}$/.test(initialRoom)
       ? { code: initialRoom.toUpperCase(), nonce: 1 }
@@ -20,43 +21,67 @@ function HomeContent() {
 
   return (
     <>
+      {/* Full-site animated background */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <GradientASCII
+          colors={['#0a1628', '#1e3a8a', '#3b82f6', '#60a5fa']}
+          shape="horizon"
+          characters=" =+xX0S8#@"
+          cellSize={16}
+          density={0.75}
+          glyphOpacity={0.7}
+          gradientOpacity={0.85}
+          glow={0.15}
+          flicker={0.15}
+          softness={0.6}
+          scale={1.1}
+          flow={0.4}
+          speed={0.6}
+          grain={0.06}
+          mouseInteraction={true}
+          intro={true}
+          className="w-full h-full"
+        />
+        {/* Soft vignette for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
+      </div>
+
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-surface focus:px-4 focus:py-2 focus:rounded focus:shadow-panel"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:text-black focus:px-4 focus:py-2 focus:rounded-lg"
       >
         Skip to content
       </a>
 
       <Header />
 
-      <main id="main" className="flex-1">
-        <section className="max-w-6xl mx-auto px-5 sm:px-8 pt-12 sm:pt-18 pb-16 sm:pb-22">
-          <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-start">
-            <div className="lg:col-span-5 pt-2">
-              <h1 className="font-display font-semibold text-3xl sm:text-4xl tracking-tight text-ink max-w-[18ch]">
+      <main id="main" className="flex-1 relative">
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-16 sm:pb-24">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+            {/* Left copy */}
+            <motion.div
+              className="lg:col-span-5 pt-1"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <h1 className="font-[family-name:var(--font-instrument)] font-semibold text-3xl sm:text-4xl lg:text-[2.75rem] tracking-tight text-white leading-[1.15] max-w-[16ch]">
                 Send files directly between devices
               </h1>
-              <p className="mt-5 text-lg text-muted max-w-[36ch]">
-                No upload. No account. Files move peer-to-peer over an encrypted connection and
-                disappear when you're done.
+              <p className="mt-5 text-base sm:text-lg text-white/55 max-w-[34ch] leading-relaxed">
+                No upload. No account. Files move peer-to-peer over an encrypted connection and disappear when you&apos;re done.
               </p>
+
               <div className="mt-8 flex flex-col sm:flex-row gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     document.querySelector<HTMLButtonElement>("[data-select-files]")?.click();
                   }}
-                  className="btn-primary inline-flex items-center justify-center gap-2 h-12 px-6 rounded-lg bg-accent text-white font-medium text-base shadow-sm hover:bg-accent-hover active:bg-accent-pressed transition-colors"
+                  className="btn-primary inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl text-base"
                 >
-                  {/* Upload / send icon (arrow up into tray) */}
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                    <path
-                      d="M9 12V4M9 4L5.5 7.5M9 4l3.5 3.5"
-                      stroke="currentColor"
-                      strokeWidth="1.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                    <path d="M9 12V4M9 4L5.5 7.5M9 4l3.5 3.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M3 14h12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
                   </svg>
                   Send files
@@ -64,59 +89,64 @@ function HomeContent() {
                 <button
                   type="button"
                   onClick={() => setJoinOpen(true)}
-                  className="inline-flex items-center justify-center h-12 px-6 rounded-lg border border-border bg-surface text-ink font-medium text-base hover:bg-paper hover:border-ink/20 active:bg-border/40 transition-colors"
+                  className="btn-ghost inline-flex items-center justify-center h-12 px-6 rounded-xl text-base font-medium"
                 >
                   Enter code
                 </button>
               </div>
-              <p className="mt-4 text-sm text-muted">
+
+              <p className="mt-5 text-sm text-white/40">
                 Works on the same network or across the internet. Room expires after transfer.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="lg:col-span-7">
+            {/* Right panel */}
+            <motion.div
+              className="lg:col-span-7"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.08 }}
+            >
               <RoomPanel
                 joinRequest={joinRequest}
-                onJoinHandled={() => {
-                  /* keep request identity; RoomPanel owns session */
-                }}
+                onJoinHandled={() => {}}
               />
-            </div>
+            </motion.div>
           </div>
         </section>
 
-        <section id="how" className="border-t border-border bg-surface">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8 py-14 sm:py-18">
-            <h2 className="font-display font-semibold text-2xl tracking-tight mb-10">How it works</h2>
-            <ol className="grid sm:grid-cols-3 gap-8 sm:gap-6 list-none">
-              <li className="relative pl-10 sm:pl-0">
-                <span className="absolute left-0 top-0 sm:static sm:block font-display font-semibold text-accent text-sm tabular-nums mb-2">
-                  01
-                </span>
-                <h3 className="font-medium text-ink mb-1.5">Create a room</h3>
-                <p className="text-sm text-muted leading-relaxed">
-                  Select files. AriXDrop generates a 6-character code and a one-time link.
-                </p>
-              </li>
-              <li className="relative pl-10 sm:pl-0">
-                <span className="absolute left-0 top-0 sm:static sm:block font-display font-semibold text-accent text-sm tabular-nums mb-2">
-                  02
-                </span>
-                <h3 className="font-medium text-ink mb-1.5">Share the code</h3>
-                <p className="text-sm text-muted leading-relaxed">
-                  The recipient opens the link or types the code. Devices negotiate a direct
-                  connection.
-                </p>
-              </li>
-              <li className="relative pl-10 sm:pl-0">
-                <span className="absolute left-0 top-0 sm:static sm:block font-display font-semibold text-accent text-sm tabular-nums mb-2">
-                  03
-                </span>
-                <h3 className="font-medium text-ink mb-1.5">Send & done</h3>
-                <p className="text-sm text-muted leading-relaxed">
-                  When both devices are in the room, press Send files. Data moves device-to-device.
-                </p>
-              </li>
+        {/* How it works */}
+        <section id="how" className="border-t border-white/5">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-white mb-10">
+              How it works
+            </h2>
+            <ol className="grid sm:grid-cols-3 gap-8 list-none">
+              {[
+                {
+                  n: "01",
+                  title: "Create a room",
+                  body: "Select files. AriXDrop generates a 6-character code and a one-time link.",
+                },
+                {
+                  n: "02",
+                  title: "Share the code",
+                  body: "The recipient opens the link or types the code. Devices negotiate a direct connection.",
+                },
+                {
+                  n: "03",
+                  title: "Send & done",
+                  body: "When both devices are in the room, press Send. Data moves device-to-device.",
+                },
+              ].map((item) => (
+                <li key={item.n} className="relative">
+                  <span className="font-[family-name:var(--font-instrument)] font-semibold text-blue-400 text-sm tabular-nums mb-2 block">
+                    {item.n}
+                  </span>
+                  <h3 className="font-medium text-white mb-1.5">{item.title}</h3>
+                  <p className="text-sm text-white/50 leading-relaxed">{item.body}</p>
+                </li>
+              ))}
             </ol>
           </div>
         </section>
@@ -139,7 +169,7 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+    <Suspense fallback={<div className="min-h-dvh bg-[var(--bg)]" />}>
       <HomeContent />
     </Suspense>
   );

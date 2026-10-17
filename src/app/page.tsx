@@ -6,7 +6,6 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RoomPanel } from "@/components/RoomPanel";
 import { JoinModal } from "@/components/JoinModal";
-import { CookieBanner } from "@/components/CookieBanner";
 import SpecularButton from "@/components/SpecularButton";
 import AnimatedContent from "@/components/AnimatedContent";
 import BlurText from "@/components/BlurText";
@@ -99,7 +98,7 @@ function HomeContent() {
 
                   <p className="mt-5 text-base sm:text-lg text-[var(--muted)] max-w-lg mx-auto leading-relaxed">
                     No upload. No account. Files move peer-to-peer over an encrypted connection and
-                    disappear when you&apos;re done.
+                    disappear when you're done.
                   </p>
 
                   <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -204,7 +203,6 @@ function HomeContent() {
       </main>
 
       <Footer />
-      <CookieBanner />
 
       <JoinModal
         open={joinOpen}

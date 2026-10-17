@@ -1,23 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light dark;
+  color-scheme: dark light;
 
-  /* Core tokens using light-dark() */
-  --bg: light-dark(#f4f6f9, #05070f);
-  --bg-elevated: light-dark(#ffffff, #0c101c);
-  --surface: light-dark(rgba(255, 255, 255, 0.78), rgba(15, 20, 35, 0.72));
-  --surface-solid: light-dark(#ffffff, #0f1423);
-  --border: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
-  --border-strong: light-dark(rgba(0, 0, 0, 0.14), rgba(255, 255, 255, 0.14));
-  --ink: light-dark(#0f172a, #f4f6fb);
-  --muted: light-dark(#64748b, #9aa3b8);
+  /* Always dark canvas so GradientASCII looks correct */
+  --bg: #05070f;
+  --bg-elevated: #0c101c;
+  --surface: rgba(15, 20, 35, 0.78);
+  --surface-solid: #0f1423;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --ink: #f4f6fb;
+  --muted: #9aa3b8;
   --accent: #3b82f6;
   --accent-hover: #2563eb;
-  --accent-soft: light-dark(rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.15));
+  --accent-soft: rgba(59, 130, 246, 0.15);
   --success: #22c55e;
   --error: #ef4444;
-  --scrim: light-dark(rgba(255, 255, 255, 0.72), rgba(0, 0, 0, 0.55));
+  --scrim: rgba(0, 0, 0, 0.45);
+}
+
+/* Light mode only softens surfaces / text a bit, bg stays dark */
+html.light {
+  --surface: rgba(255, 255, 255, 0.88);
+  --surface-solid: #ffffff;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --ink: #0f172a;
+  --muted: #64748b;
+  --accent-soft: rgba(59, 130, 246, 0.12);
+  --scrim: rgba(0, 0, 0, 0.35);
 }
 
 html {
@@ -30,7 +42,6 @@ body {
   min-height: 100dvh;
 }
 
-/* Glass panel */
 .glass {
   background: var(--surface);
   backdrop-filter: blur(20px) saturate(140%);
@@ -39,13 +50,12 @@ body {
 }
 
 .glass-strong {
-  background: light-dark(rgba(255, 255, 255, 0.92), rgba(12, 16, 28, 0.88));
+  background: var(--surface-solid);
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   border: 1px solid var(--border-strong);
 }
 
-/* Focus */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -57,7 +67,6 @@ input:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* Buttons */
 .btn-primary {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
@@ -80,17 +89,16 @@ input:focus:not(:focus-visible) {
 }
 
 .btn-ghost {
-  background: light-dark(rgba(0, 0, 0, 0.04), transparent);
+  background: transparent;
   border: 1px solid var(--border-strong);
   color: var(--ink);
   transition: all 0.2s ease;
 }
 .btn-ghost:hover:not(:disabled) {
-  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.05));
-  border-color: light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.2));
+  background: var(--accent-soft);
+  border-color: var(--border-strong);
 }
 
-/* Progress */
 .progress-fill {
   transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -100,7 +108,6 @@ input:focus:not(:focus-visible) {
   font-variant-numeric: tabular-nums;
 }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -111,7 +118,6 @@ input:focus:not(:focus-visible) {
   }
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -120,9 +126,9 @@ input:focus:not(:focus-visible) {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.12));
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: light-dark(rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0.2));
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
 }

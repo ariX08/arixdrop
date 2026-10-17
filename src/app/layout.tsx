@@ -62,9 +62,9 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-[var(--page-bg)] text-[var(--ink)] font-[family-name:var(--font-ibm-plex)] antialiased min-h-dvh flex flex-col relative overflow-x-hidden">
+      <body className="font-[family-name:var(--font-ibm-plex)] antialiased min-h-dvh flex flex-col relative overflow-x-hidden text-[var(--ink)]">
         <SiteBackground />
-        {children}
+        <div className="site-content flex flex-col min-h-dvh flex-1">{children}</div>
         <CookieBannerHost />
       </body>
     </html>

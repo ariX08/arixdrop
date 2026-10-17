@@ -1,7 +1,7 @@
-/** Static site background — Cloudflare-style hero field with Stripe #635bff */
+/** Static Stripe #635bff field (no WebGL / no motion) */
 export function SiteBackground() {
   return (
-    <div className="site-bg" aria-hidden>
+    <div className="site-bg" aria-hidden="true">
       <div className="site-bg-dots" />
     </div>
   );

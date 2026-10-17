@@ -2,88 +2,83 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Stripe purple */
 :root {
   --stripe: #635bff;
   --stripe-deep: #4f46e5;
   --stripe-glow: #8b85ff;
 
   color-scheme: light;
-  --page-bg: #ffffff;
-  --bg: #ffffff;
-  --bg-soft: #f5f5f7;
+  /* Transparent so the fixed .site-bg shows through */
+  --page-bg: transparent;
+  --bg: transparent;
+  --bg-soft: rgba(255, 255, 255, 0.12);
   --surface: #ffffff;
   --surface-elevated: #ffffff;
-  --border: #e3e3e8;
-  --border-strong: #d2d2d7;
-  --ink: #1d1d1f;
-  --ink-soft: #333336;
-  --muted: #6e6e73;
-  --muted-soft: #8e8e93;
-  --accent: #635bff;
-  --accent-hover: #4f46e5;
-  --accent-soft: rgba(99, 91, 255, 0.12);
-  --success: #0d9488;
-  --error: #dc2626;
-  --on-accent: #ffffff;
-  --header-bg: rgba(255, 255, 255, 0.82);
-  --header-border: #e3e3e8;
-  --section-bg: #f5f5f7;
+  --border: rgba(255, 255, 255, 0.35);
+  --border-strong: rgba(255, 255, 255, 0.5);
+  --ink: #ffffff;
+  --ink-soft: #f0eeff;
+  --muted: rgba(255, 255, 255, 0.85);
+  --muted-soft: rgba(255, 255, 255, 0.7);
+  --accent: #ffffff;
+  --accent-hover: #f5f5f7;
+  --accent-soft: rgba(255, 255, 255, 0.16);
+  --success: #5eead4;
+  --error: #fecaca;
+  --on-accent: #1d1d1f;
+  --header-bg: rgba(255, 255, 255, 0.14);
+  --header-border: rgba(255, 255, 255, 0.22);
+  --section-bg: rgba(0, 0, 0, 0.18);
   --scrim: transparent;
 }
 
 html.dark {
   color-scheme: dark;
-  --page-bg: #0a0a0c;
-  --bg: #0a0a0c;
-  --bg-soft: #121214;
-  --surface: #1c1c1e;
+  --page-bg: transparent;
+  --bg: transparent;
+  --bg-soft: rgba(0, 0, 0, 0.25);
+  --surface: rgba(28, 28, 30, 0.92);
   --surface-elevated: #2c2c2f;
-  --border: #2c2c2f;
-  --border-strong: #3a3a3f;
-  --ink: #f5f5f7;
-  --ink-soft: #e5e5ea;
-  --muted: #a1a1a6;
-  --muted-soft: #8e8e93;
-  --accent: #7a73ff;
-  --accent-hover: #635bff;
-  --accent-soft: rgba(99, 91, 255, 0.22);
+  --border: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --ink: #ffffff;
+  --ink-soft: #f0eeff;
+  --muted: rgba(255, 255, 255, 0.85);
+  --muted-soft: rgba(255, 255, 255, 0.7);
+  --accent: #e0e0ff;
+  --accent-hover: #ffffff;
+  --accent-soft: rgba(255, 255, 255, 0.14);
   --success: #2dd4bf;
   --error: #f87171;
-  --on-accent: #ffffff;
-  --header-bg: rgba(10, 10, 12, 0.85);
-  --header-border: #2c2c2f;
-  --section-bg: #121214;
+  --on-accent: #1d1d1f;
+  --header-bg: rgba(10, 10, 12, 0.45);
+  --header-border: rgba(255, 255, 255, 0.14);
+  --section-bg: rgba(0, 0, 0, 0.28);
   --scrim: transparent;
 }
 
 html {
-  background-color: var(--page-bg);
+  /* Fallback color if .site-bg is slow */
+  background-color: #635bff;
+  min-height: 100%;
 }
 
 body {
   margin: 0;
-  background-color: var(--page-bg);
+  background-color: transparent;
   color: var(--ink);
   min-height: 100dvh;
 }
 
-/* Hero-style full-site field (North Star pattern, Stripe palette) */
+/* Full-viewport Stripe field — always behind content */
 .site-bg {
   position: fixed;
   inset: 0;
-  z-index: -10;
+  z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(120% 80% at 50% 105%, var(--stripe-glow) 0%, rgba(99, 91, 255, 0) 55%),
-    linear-gradient(180deg, var(--stripe) 0%, var(--stripe-deep) 100%);
-}
-
-html:not(.dark) .site-bg {
-  /* Light mode: softer field so ink stays readable */
-  background:
-    radial-gradient(120% 80% at 50% 105%, #a5a0ff 0%, rgba(99, 91, 255, 0) 55%),
-    linear-gradient(180deg, #635bff 0%, #5147e0 100%);
+    radial-gradient(120% 80% at 50% 105%, #8b85ff 0%, rgba(99, 91, 255, 0) 55%),
+    linear-gradient(180deg, #635bff 0%, #4f46e5 100%);
 }
 
 .site-bg-dots {
@@ -91,37 +86,32 @@ html:not(.dark) .site-bg {
   inset: 0;
   background-image: radial-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1.4px);
   background-size: 7px 7px;
-  -webkit-mask-image: linear-gradient(180deg, transparent 10%, #000 85%);
-  mask-image: linear-gradient(180deg, transparent 10%, #000 85%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 8%, #000 88%);
+  mask-image: linear-gradient(180deg, transparent 8%, #000 88%);
   opacity: 0.55;
 }
 
-/* Page chrome sits on the purple field — force light text on main marketing surface */
-.hero-on-field {
-  color: #ffffff;
-}
-
-.hero-on-field .hero-muted {
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.hero-on-field .hero-soft {
-  color: rgba(255, 255, 255, 0.72);
+/* Content above the field */
+.site-content {
+  position: relative;
+  z-index: 1;
 }
 
 .glass {
   background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 12px 32px rgba(15, 23, 42, 0.08);
-  color: var(--ink);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 12px 32px rgba(15, 23, 42, 0.12);
+  color: #1d1d1f;
 }
 
 html.dark .glass {
+  border-color: var(--border);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(0, 0, 0, 0.5);
+  color: #f5f5f7;
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
 
@@ -131,48 +121,8 @@ input:focus:not(:focus-visible) {
   outline: none;
 }
 
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  color: #1d1d1f;
-  font-weight: 600;
-  border: 0;
-  border-radius: 12px;
-  padding: 0.75rem 1.35rem;
-  cursor: pointer;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #f5f5f7;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
-  font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  border-radius: 12px;
-  padding: 0.75rem 1.35rem;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-}
-
-.btn-ghost:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.3);
-}
-
 .progress-fill {
-  transition: none;
+  transition: width 0.3s ease;
 }
 
 .room-code {
@@ -188,6 +138,6 @@ input:focus:not(:focus-visible) {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: rgba(255, 255, 255, 0.35);
   border-radius: 4px;
 }

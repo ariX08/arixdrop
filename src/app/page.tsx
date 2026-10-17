@@ -47,7 +47,7 @@ function HomeContent() {
     <div className="min-h-dvh flex flex-col relative">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-[var(--surface)] focus:text-[var(--ink)] focus:px-4 focus:py-2 focus:rounded-lg"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:text-black focus:px-4 focus:py-2 focus:rounded-lg"
       >
         Skip to content
       </a>
@@ -63,7 +63,7 @@ function HomeContent() {
           onChange={(e) => onFilesPicked(e.target.files)}
         />
 
-        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 sm:pt-28 pb-20 text-center hero-on-field">
+        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 sm:pt-28 pb-20 text-center text-white">
           <AnimatePresence mode="wait">
             {!sessionActive ? (
               <motion.div
@@ -96,7 +96,7 @@ function HomeContent() {
                     className="font-[family-name:var(--font-instrument)] font-semibold text-4xl sm:text-5xl lg:text-[3.4rem] tracking-tight leading-[1.15] justify-center"
                   />
 
-                  <p className="mt-5 text-base sm:text-lg hero-muted max-w-lg mx-auto leading-relaxed">
+                  <p className="mt-5 text-base sm:text-lg text-white/85 max-w-lg mx-auto leading-relaxed">
                     No upload. No account. Files move peer-to-peer over an encrypted connection and
                     disappear when you&apos;re done.
                   </p>
@@ -132,7 +132,7 @@ function HomeContent() {
                     </SpecularButton>
                   </div>
 
-                  <p className="mt-8 text-sm hero-soft">Works on the same network or across the internet.</p>
+                  <p className="mt-8 text-sm text-white/70">Works on the same network or across the internet.</p>
                 </AnimatedContent>
               </motion.div>
             ) : (
@@ -155,15 +155,8 @@ function HomeContent() {
           </AnimatePresence>
         </section>
 
-        <section
-          id="how"
-          className="border-t"
-          style={{
-            borderColor: "rgba(255,255,255,0.2)",
-            backgroundColor: "rgba(0,0,0,0.18)",
-          }}
-        >
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20 hero-on-field">
+        <section id="how" className="border-t border-white/20 bg-black/20">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-white">
             <AnimatedContent distance={48} duration={0.7} stagger={0.1} threshold={0.12}>
               <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-center mb-12">
                 How it works
@@ -191,7 +184,7 @@ function HomeContent() {
                       {item.n}
                     </span>
                     <h3 className="font-medium mb-1.5">{item.title}</h3>
-                    <p className="text-sm hero-muted leading-relaxed">{item.body}</p>
+                    <p className="text-sm text-white/80 leading-relaxed">{item.body}</p>
                   </li>
                 ))}
               </ol>

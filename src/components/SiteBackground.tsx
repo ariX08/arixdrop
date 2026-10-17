@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { DitherProps } from "./Dither";
 
-const Dither = dynamic(() => import("./Dither"), { ssr: false });
+const Dither = dynamic<DitherProps>(() => import("./Dither"), { ssr: false });
 
 export function SiteBackground() {
   return (
@@ -31,7 +32,6 @@ export function SiteBackground() {
           style={{ width: "100%", height: "100%" }}
         />
       </div>
-      {/* Soft scrim so text stays readable over the dither field */}
       <div className="absolute inset-0 bg-black/45" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/55" />
     </div>

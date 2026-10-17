@@ -56,13 +56,14 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* FOUC: theme class + solid page bg before paint */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('pigeon-theme');if(t!=='light'&&t!=='dark'&&t!=='system'){t='system';localStorage.setItem('pigeon-theme','system');}var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',!!d);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('pigeon-theme');if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;el.classList.toggle('dark',!!d);el.style.backgroundColor=d?'#1e1b4b':'#ebe7ff';}catch(e){document.documentElement.style.backgroundColor='#1e1b4b';}})();`,
           }}
         />
       </head>
-      <body className="bg-transparent text-[var(--ink)] font-[family-name:var(--font-ibm-plex)] antialiased min-h-dvh flex flex-col relative overflow-x-hidden">
+      <body className="bg-[var(--page-bg)] text-[var(--ink)] font-[family-name:var(--font-ibm-plex)] antialiased min-h-dvh flex flex-col relative overflow-x-hidden">
         <SiteBackground />
         {children}
         <CookieBannerHost />

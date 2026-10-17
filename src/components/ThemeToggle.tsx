@@ -12,14 +12,28 @@ function resolveDark(mode: Mode): boolean {
 }
 
 function applyTheme(mode: Mode) {
-  document.documentElement.classList.toggle("dark", resolveDark(mode));
+  const dark = resolveDark(mode);
+  document.documentElement.classList.toggle("dark", dark);
+  document.documentElement.style.backgroundColor = dark ? "#1e1b4b" : "#ebe7ff";
+  if (document.body) {
+    document.body.style.backgroundColor = dark ? "#1e1b4b" : "#ebe7ff";
+  }
 }
 
 function canPersistTheme(): boolean {
-  // Before any consent choice, allow theme for this session only (no write if preferences off later)
   const consent = readConsent();
   if (!consent) return true;
   return allowsCategory("preferences", consent);
+}
+
+function readStoredMode(): Mode {
+  try {
+    const raw = localStorage.getItem("pigeon-theme");
+    if (raw === "light" || raw === "dark" || raw === "system") return raw;
+  } catch {
+    /* ignore */
+  }
+  return "system";
 }
 
 export function ThemeToggle() {
@@ -27,15 +41,8 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    let stored: Mode = "system";
-    try {
-      const raw = localStorage.getItem("pigeon-theme");
-      if (raw === "light" || raw === "dark" || raw === "system") stored = raw;
-    } catch {
-      /* ignore */
-    }
+    let stored = readStoredMode();
 
-    // If preferences cookies are off, do not restore a stored theme — follow device
     if (readConsent() && !allowsCategory("preferences")) {
       stored = "system";
     }
@@ -46,10 +53,12 @@ export function ThemeToggle() {
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {
-      const current = (localStorage.getItem("pigeon-theme") as Mode | null) || "system";
-      const effective =
-        readConsent() && !allowsCategory("preferences") ? "system" : current === "system" || !current ? "system" : current;
-      if (effective === "system") applyTheme("system");
+      const current =
+        readConsent() && !allowsCategory("preferences") ? "system" : readStoredMode();
+      if (current === "system") {
+        setMode("system");
+        applyTheme("system");
+      }
     };
     mq.addEventListener("change", onChange);
 

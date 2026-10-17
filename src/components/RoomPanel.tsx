@@ -10,6 +10,7 @@ import {
   generateRoomCode,
 } from "@/lib/webrtc";
 import { SignalingClient } from "@/lib/signaling";
+import { prepareFilesForTransfer } from "@/lib/zip";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -38,7 +39,8 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   const [channelReady, setChannelReady] = useState(false);
   const [sending, setSending] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileReady, setTurnstileReady] = useState(!SITE_KEY); // if no key, skip
+  const [turnstileReady, setTurnstileReady] = useState(!SITE_KEY);
+  const [zipping, setZipping] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedFilesRef = useRef<File[]>([]);
@@ -282,7 +284,6 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
     await client.connect(code);
   }
 
-  // Join via deep link / modal
   useEffect(() => {
     if (!joinRequest) return;
     const code = joinRequest.code.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -292,14 +293,9 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
 
     let cancelled = false;
     (async () => {
-      // Require Turnstile if configured
       if (SITE_KEY && !turnstileToken) {
         setStatusLine("Verifying…");
-        // wait a bit for invisible widget
         await new Promise((r) => setTimeout(r, 800));
-        if (!turnstileToken && !turnstileReady) {
-          // still try — invisible may resolve async
-        }
       }
 
       clearTimers();
@@ -344,14 +340,9 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   }
 
   async function beginSend(selected: File[]) {
-    // Turnstile gate
     if (SITE_KEY && !turnstileToken) {
       setStatusLine("Please wait for verification…");
-      // trigger execute if available
-      try {
-        turnstileRef.current?.execute?.();
-      } catch {}
-      // give it a moment
+      try { turnstileRef.current?.execute?.(); } catch {}
       await new Promise((r) => setTimeout(r, 1200));
       if (!turnstileToken) {
         setErrorTitle("Verification required");
@@ -361,8 +352,27 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
       }
     }
 
-    selectedFilesRef.current = selected;
-    setPendingNames(selected.map((f) => f.name));
+    // Auto-zip if multiple files
+    let filesToSend = selected;
+    if (selected.length > 1) {
+      setZipping(true);
+      setStatusLine(`Zipping ${selected.length} files…`);
+      try {
+        filesToSend = await prepareFilesForTransfer(selected);
+        setPendingNames([filesToSend[0].name]);
+      } catch {
+        setErrorTitle("Zip failed");
+        setErrorDetail("Could not create zip archive. Try sending fewer files.");
+        setState("error");
+        setZipping(false);
+        return;
+      }
+      setZipping(false);
+    } else {
+      setPendingNames(selected.map((f) => f.name));
+    }
+
+    selectedFilesRef.current = filesToSend;
     setRole("sender");
     roleRef.current = "sender";
     setState("creating");
@@ -473,11 +483,11 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
     setStatusLine("");
     setPeerCount(0);
     setSending(false);
+    setZipping(false);
     setRoomCode("");
     setRoomLink("");
     selectedFilesRef.current = [];
     if (fileInputRef.current) fileInputRef.current.value = "";
-    // reset turnstile
     setTurnstileToken(null);
     try { turnstileRef.current?.reset?.(); } catch {}
   }
@@ -501,47 +511,28 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
         onChange={(e) => handleFilesSelected(e.target.files)}
       />
 
-      {/* Invisible Turnstile */}
       {SITE_KEY && (
         <div className="absolute opacity-0 pointer-events-none h-0 overflow-hidden">
           <Turnstile
             ref={turnstileRef}
             siteKey={SITE_KEY}
-            options={{
-              size: "invisible",
-              appearance: "interaction-only",
-            }}
-            onSuccess={(token) => {
-              setTurnstileToken(token);
-              setTurnstileReady(true);
-            }}
-            onError={() => {
-              setTurnstileReady(false);
-              setTurnstileToken(null);
-            }}
-            onExpire={() => {
-              setTurnstileToken(null);
-              try { turnstileRef.current?.reset?.(); } catch {}
-            }}
+            options={{ size: "invisible", appearance: "interaction-only" }}
+            onSuccess={(token) => { setTurnstileToken(token); setTurnstileReady(true); }}
+            onError={() => { setTurnstileReady(false); setTurnstileToken(null); }}
+            onExpire={() => { setTurnstileToken(null); try { turnstileRef.current?.reset?.(); } catch {} }}
           />
         </div>
       )}
 
       <AnimatePresence mode="wait">
         {state === "idle" && (
-          <motion.div
-            key="idle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="p-6 sm:p-8"
-          >
-            <div className="flex items-center justify-between mb-6">
+          <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
+            <div className="flex items-center justify-between mb-5">
               <span className="text-sm font-medium text-white/50">Room</span>
               <span className="text-xs text-white/30 tabular-nums">—</span>
             </div>
             <div
-              className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] min-h-[220px] flex flex-col items-center justify-center gap-4 px-6 text-center cursor-pointer hover:bg-white/[0.05] hover:border-white/25 transition-colors"
+              className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] min-h-[200px] flex flex-col items-center justify-center gap-4 px-6 text-center cursor-pointer hover:bg-white/[0.05] hover:border-white/25 transition-colors"
               onClick={handleSendClick}
               onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-blue-400/50"); }}
               onDragLeave={(e) => e.currentTarget.classList.remove("border-blue-400/50")}
@@ -551,15 +542,15 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
                 handleFilesSelected(e.dataTransfer.files);
               }}
             >
-              <div className="w-14 h-14 rounded-2xl bg-blue-500/15 flex items-center justify-center">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-blue-400">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-blue-400">
                   <path d="M12 16V8M12 8L8.5 11.5M12 8l3.5 3.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
                   <path d="M4 18h16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-white/80">Drop files here or click to select</p>
-                <p className="text-xs text-white/40 mt-1">Multiple files supported</p>
+                <p className="text-sm font-medium text-white/80">Drop files here or click</p>
+                <p className="text-xs text-white/40 mt-1">Multiple files → auto zipped</p>
               </div>
               <button
                 type="button"
@@ -573,32 +564,20 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
           </motion.div>
         )}
 
-        {(state === "creating" || state === "connecting") && (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="p-6 sm:p-8"
-          >
+        {(state === "creating" || state === "connecting" || zipping) && (
+          <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-6">
               <span className="text-sm font-medium text-white/60">
-                {state === "connecting" ? "Joining room…" : "Creating room…"}
+                {zipping ? "Zipping files…" : state === "connecting" ? "Joining room…" : "Creating room…"}
               </span>
               <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
             </div>
-            <p className="text-sm text-white/40 text-center py-10">{statusLine || "Connecting…"}</p>
+            <p className="text-sm text-white/40 text-center py-10">{statusLine || "Working…"}</p>
           </motion.div>
         )}
 
         {state === "waiting" && (
-          <motion.div
-            key="waiting"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="p-6 sm:p-8"
-          >
+          <motion.div key="waiting" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-5">
               <span className="text-sm font-medium text-white">
                 {role === "receiver" ? "Joined room" : "Room ready"}
@@ -613,28 +592,15 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
                   {roomCode}
                 </p>
                 {role === "sender" && (
-                  <button
-                    type="button"
-                    onClick={() => copy(roomCode, "code")}
-                    className="h-9 px-3 rounded-lg border border-white/15 text-sm font-medium text-white/80 hover:bg-white/5 transition"
-                  >
+                  <button type="button" onClick={() => copy(roomCode, "code")} className="h-9 px-3 rounded-lg border border-white/15 text-sm font-medium text-white/80 hover:bg-white/5 transition">
                     {copyFeedback === "code" ? "Copied" : "Copy"}
                   </button>
                 )}
               </div>
               {role === "sender" && roomLink && (
                 <div className="mt-3 flex gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={roomLink}
-                    className="flex-1 h-10 px-3 rounded-lg border border-white/10 bg-white/5 text-sm font-mono text-white/70 truncate"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => copy(roomLink, "link")}
-                    className="h-10 px-3 rounded-lg border border-white/15 text-sm font-medium text-white/80 hover:bg-white/5 shrink-0 transition"
-                  >
+                  <input type="text" readOnly value={roomLink} className="flex-1 h-10 px-3 rounded-lg border border-white/10 bg-white/5 text-sm font-mono text-white/70 truncate" />
+                  <button type="button" onClick={() => copy(roomLink, "link")} className="h-10 px-3 rounded-lg border border-white/15 text-sm font-medium text-white/80 hover:bg-white/5 shrink-0 transition">
                     {copyFeedback === "link" ? "Copied" : "Copy link"}
                   </button>
                 </div>
@@ -654,40 +620,23 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
 
             <div className="flex items-center justify-between gap-3 mb-4">
               <p className="text-sm text-white/50">{statusLine}</p>
-              <span className="text-xs font-medium tabular-nums text-white/40">
-                {peerCount}/2
-              </span>
+              <span className="text-xs font-medium tabular-nums text-white/40">{peerCount}/2</span>
             </div>
 
             {role === "sender" && (
-              <button
-                type="button"
-                onClick={sendFilesNow}
-                disabled={!canSend}
-                className="w-full h-12 rounded-xl btn-primary text-base disabled:opacity-40"
-              >
+              <button type="button" onClick={sendFilesNow} disabled={!canSend} className="w-full h-12 rounded-xl btn-primary text-base disabled:opacity-40">
                 {canSend ? "Send files" : "Waiting for connection…"}
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={reset}
-              className="w-full mt-3 h-10 rounded-xl text-sm text-white/40 hover:text-white/70 transition"
-            >
+            <button type="button" onClick={reset} className="w-full mt-3 h-10 rounded-xl text-sm text-white/40 hover:text-white/70 transition">
               Cancel
             </button>
           </motion.div>
         )}
 
         {(state === "transfer" || state === "complete") && (
-          <motion.div
-            key="transfer"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="p-6 sm:p-8"
-          >
+          <motion.div key="transfer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-5">
               <span className="text-sm font-medium text-white">
                 {state === "complete" ? "Transfer complete" : "Transferring…"}
@@ -695,13 +644,9 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
               <span className="text-xs text-white/40 tabular-nums">{speed}</span>
             </div>
 
-            {/* Overall progress */}
             <div className="mb-5">
               <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 progress-fill"
-                  style={{ width: `${Math.round(overall * 100)}%` }}
-                />
+                <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 progress-fill" style={{ width: `${Math.round(overall * 100)}%` }} />
               </div>
               <p className="text-xs text-white/40 mt-1.5 tabular-nums">{Math.round(overall * 100)}%</p>
             </div>
@@ -712,10 +657,7 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white/80 truncate">{f.name}</p>
                     <div className="h-1 mt-1 rounded-full bg-white/10 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-blue-400/80 progress-fill"
-                        style={{ width: `${Math.round(f.progress * 100)}%` }}
-                      />
+                      <div className="h-full rounded-full bg-blue-400/80 progress-fill" style={{ width: `${Math.round(f.progress * 100)}%` }} />
                     </div>
                   </div>
                   <span className="text-xs text-white/40 tabular-nums shrink-0">
@@ -726,11 +668,7 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
             </ul>
 
             {state === "complete" && (
-              <button
-                type="button"
-                onClick={reset}
-                className="w-full mt-6 h-11 rounded-xl btn-primary text-sm"
-              >
+              <button type="button" onClick={reset} className="w-full mt-6 h-11 rounded-xl btn-primary text-sm">
                 Send more files
               </button>
             )}
@@ -738,13 +676,7 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
         )}
 
         {state === "error" && (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="p-6 sm:p-8 text-center"
-          >
+          <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8 text-center">
             <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-400">
                 <path d="M12 8v5M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -753,11 +685,7 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
             </div>
             <h3 className="font-medium text-white mb-1">{errorTitle}</h3>
             <p className="text-sm text-white/50 mb-6">{errorDetail}</p>
-            <button
-              type="button"
-              onClick={reset}
-              className="h-11 px-6 rounded-xl btn-primary text-sm"
-            >
+            <button type="button" onClick={reset} className="h-11 px-6 rounded-xl btn-primary text-sm">
               Try again
             </button>
           </motion.div>

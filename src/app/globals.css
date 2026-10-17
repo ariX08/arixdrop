@@ -1,40 +1,67 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
-  --bg: light-dark(#ffffff, #0a0b0f);
-  --bg-soft: light-dark(#f6f9fc, #11131a);
-  --surface: light-dark(#ffffff, #161922);
-  --border: light-dark(rgba(15, 23, 42, 0.1), rgba(255, 255, 255, 0.1));
-  --border-strong: light-dark(rgba(15, 23, 42, 0.16), rgba(255, 255, 255, 0.16));
-  --ink: light-dark(#0a2540, #f6f9fc);
-  --muted: light-dark(#425466, #a3acb9);
-  --accent: light-dark(#635bff, #7a73ff);
-  --accent-hover: light-dark(#5851ea, #8b85ff);
-  --accent-soft: light-dark(rgba(99, 91, 255, 0.1), rgba(122, 115, 255, 0.16));
-  --success: light-dark(#0d9488, #2dd4bf);
-  --error: light-dark(#df1b41, #f87171);
-  --gradient-a: light-dark(#e0f2fe, #1e1b4b);
-  --gradient-b: light-dark(#fce7f3, #312e81);
-  --gradient-c: light-dark(#fef3c7, #4c1d95);
-  --gradient-d: light-dark(#ede9fe, #0f172a);
+  --bg: #f4f2fb;
+  --bg-soft: #ebe7f8;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --border: rgba(15, 23, 42, 0.1);
+  --border-strong: rgba(15, 23, 42, 0.18);
+  --ink: #0f1220;
+  --ink-soft: #1e2438;
+  --muted: #5b6478;
+  --muted-soft: #7a8499;
+  --accent: #635bff;
+  --accent-hover: #5249e8;
+  --accent-soft: rgba(99, 91, 255, 0.12);
+  --success: #0d9488;
+  --error: #df1b41;
+  --on-accent: #ffffff;
+  --header-bg: rgba(255, 255, 255, 0.72);
+  --header-border: rgba(15, 23, 42, 0.08);
+  --scrim: rgba(255, 255, 255, 0.35);
+  --gradient-a: #e0f2fe;
+  --gradient-b: #fce7f3;
+  --gradient-c: #fef3c7;
+  --gradient-d: #ede9fe;
+}
+
+html.dark {
+  color-scheme: dark;
+
+  --bg: #0a0b0f;
+  --bg-soft: #11131a;
+  --surface: #161922;
+  --surface-elevated: #1c2030;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --ink: #f6f9fc;
+  --ink-soft: #e2e8f0;
+  --muted: #a3acb9;
+  --muted-soft: #7c8698;
+  --accent: #7a73ff;
+  --accent-hover: #8b85ff;
+  --accent-soft: rgba(122, 115, 255, 0.18);
+  --success: #2dd4bf;
+  --error: #f87171;
+  --on-accent: #ffffff;
+  --header-bg: rgba(0, 0, 0, 0.35);
+  --header-border: rgba(255, 255, 255, 0.1);
+  --scrim: rgba(0, 0, 0, 0.4);
+  --gradient-a: #1e1b4b;
+  --gradient-b: #312e81;
+  --gradient-c: #4c1d95;
+  --gradient-d: #0f172a;
 }
 
 html {
   scroll-behavior: smooth;
 }
 
-/* class-based dark for explicit toggle */
-html.dark {
-  color-scheme: dark;
-}
-html:not(.dark) {
-  color-scheme: light;
-}
-
 body {
-  background-color: var(--bg);
+  background-color: transparent;
   color: var(--ink);
   min-height: 100dvh;
 }
@@ -48,21 +75,18 @@ body {
     var(--bg);
 }
 
-html.dark .hero-gradient {
-  background:
-    radial-gradient(ellipse 80% 60% at 90% 10%, rgba(99, 91, 255, 0.28) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 70% 30%, rgba(168, 85, 247, 0.22) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 50% at 95% 50%, rgba(59, 130, 246, 0.16) 0%, transparent 45%),
-    radial-gradient(ellipse 50% 40% at 85% 80%, rgba(14, 165, 233, 0.12) 0%, transparent 50%),
-    var(--bg);
-}
-
 .glass {
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow:
-    0 1px 2px light-dark(rgba(15, 23, 42, 0.04), rgba(0, 0, 0, 0.3)),
-    0 12px 32px light-dark(rgba(15, 23, 42, 0.08), rgba(0, 0, 0, 0.4));
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+html.dark .glass {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 12px 32px rgba(0, 0, 0, 0.4);
 }
 
 :focus-visible {
@@ -78,7 +102,7 @@ input:focus:not(:focus-visible) {
 
 .btn-primary {
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font-weight: 600;
   transition: background 0.15s ease, transform 0.15s ease;
 }
@@ -132,6 +156,6 @@ input:focus:not(:focus-visible) {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: light-dark(rgba(15, 23, 42, 0.15), rgba(255, 255, 255, 0.15));
+  background: var(--border-strong);
   border-radius: 4px;
 }

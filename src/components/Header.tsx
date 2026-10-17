@@ -9,19 +9,31 @@ export function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-black/20 backdrop-blur-md">
+    <header
+      className="sticky top-0 z-40 border-b backdrop-blur-md"
+      style={{
+        backgroundColor: "var(--header-bg)",
+        borderColor: "var(--header-border)",
+      }}
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2.5" aria-label="pigeon home">
           <Image src="/logo.svg" alt="" width={28} height={28} className="shrink-0" priority />
-          <span className="font-[family-name:var(--font-brand)] text-2xl leading-none tracking-wide text-white lowercase">
+          <span className="font-[family-name:var(--font-brand)] text-2xl leading-none tracking-wide text-[var(--ink)] lowercase">
             pigeon
           </span>
         </a>
 
-        <nav className="hidden sm:flex items-center gap-7 text-sm text-white/70" aria-label="Primary">
-          <a href="/#how" className="hover:text-white transition-colors">How it works</a>
-          <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>
-          <a href="/security" className="hover:text-white transition-colors">Security</a>
+        <nav className="hidden sm:flex items-center gap-6 text-sm text-[var(--muted)]" aria-label="Primary">
+          <a href="/#how" className="hover:text-[var(--ink)] transition-colors">
+            How it works
+          </a>
+          <a href="/privacy" className="hover:text-[var(--ink)] transition-colors">
+            Privacy
+          </a>
+          <a href="/security" className="hover:text-[var(--ink)] transition-colors">
+            Security
+          </a>
           <ThemeToggle />
         </nav>
 
@@ -29,7 +41,7 @@ export function Header() {
           <ThemeToggle />
           <button
             type="button"
-            className="p-2 -mr-2 text-white/70 hover:text-white"
+            className="p-2 -mr-2 text-[var(--muted)] hover:text-[var(--ink)]"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
@@ -52,17 +64,25 @@ export function Header() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="sm:hidden overflow-hidden border-t border-white/10 bg-black/40"
+            className="sm:hidden overflow-hidden border-t"
+            style={{
+              borderColor: "var(--header-border)",
+              backgroundColor: "var(--surface)",
+            }}
           >
             <nav className="flex flex-col px-4 py-3 text-sm">
-              {["How it works", "Privacy", "Security"].map((label, i) => (
+              {[
+                { label: "How it works", href: "/#how" },
+                { label: "Privacy", href: "/privacy" },
+                { label: "Security", href: "/security" },
+              ].map((item) => (
                 <a
-                  key={label}
-                  href={i === 0 ? "/#how" : `/${label.toLowerCase()}`}
-                  className="py-2.5 text-white/70 hover:text-white"
+                  key={item.label}
+                  href={item.href}
+                  className="py-2.5 text-[var(--muted)] hover:text-[var(--ink)]"
                   onClick={() => setOpen(false)}
                 >
-                  {label}
+                  {item.label}
                 </a>
               ))}
             </nav>

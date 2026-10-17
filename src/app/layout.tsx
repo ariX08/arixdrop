@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, IBM_Plex_Sans, JetBrains_Mono, Story_Script } from "next/font/google";
 import { SiteBackground } from "@/components/SiteBackground";
+import { CookieBannerHost } from "@/components/CookieBannerHost";
 import "./globals.css";
 
 const instrument = Instrument_Sans({
@@ -64,6 +65,7 @@ export default function RootLayout({
       <body className="bg-transparent text-[var(--ink)] font-[family-name:var(--font-ibm-plex)] antialiased min-h-dvh flex flex-col relative overflow-x-hidden">
         <SiteBackground />
         {children}
+        <CookieBannerHost />
       </body>
     </html>
   );

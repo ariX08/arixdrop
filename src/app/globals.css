@@ -1,22 +1,45 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
+
+  --bg: #ffffff;
+  --bg-soft: #f6f9fc;
+  --surface: #ffffff;
+  --border: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.14);
+  --ink: #0a2540;
+  --muted: #425466;
+  --accent: #635bff;
+  --accent-hover: #5851ea;
+  --accent-soft: rgba(99, 91, 255, 0.1);
+  --success: #0d9488;
+  --error: #df1b41;
+  --gradient-a: #e0f2fe;
+  --gradient-b: #fce7f3;
+  --gradient-c: #fef3c7;
+  --gradient-d: #ede9fe;
+}
+
+html.dark {
   color-scheme: dark;
 
-  --bg: #05070f;
-  --bg-elevated: #0c101c;
-  --surface: rgba(12, 16, 28, 0.88);
-  --surface-solid: #0f1423;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.18);
-  --ink: #f8fafc;
-  --muted: #a1aec2;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --accent-soft: rgba(59, 130, 246, 0.18);
-  --success: #22c55e;
-  --error: #ef4444;
-  --scrim: rgba(0, 0, 0, 0.5);
+  --bg: #0a0b0f;
+  --bg-soft: #11131a;
+  --surface: #161922;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --ink: #f6f9fc;
+  --muted: #a3acb9;
+  --accent: #7a73ff;
+  --accent-hover: #8b85ff;
+  --accent-soft: rgba(122, 115, 255, 0.15);
+  --success: #2dd4bf;
+  --error: #f87171;
+  --gradient-a: #1e1b4b;
+  --gradient-b: #312e81;
+  --gradient-c: #4c1d95;
+  --gradient-d: #0f172a;
 }
 
 html {
@@ -29,11 +52,37 @@ body {
   min-height: 100dvh;
 }
 
+/* Soft Stripe-like mesh gradient (static, no animation) */
+.hero-gradient {
+  background:
+    radial-gradient(ellipse 80% 60% at 90% 10%, var(--gradient-c) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 70% 30%, var(--gradient-b) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 95% 50%, var(--gradient-d) 0%, transparent 45%),
+    radial-gradient(ellipse 50% 40% at 85% 80%, var(--gradient-a) 0%, transparent 50%),
+    var(--bg);
+}
+
+html.dark .hero-gradient {
+  background:
+    radial-gradient(ellipse 80% 60% at 90% 10%, rgba(99, 91, 255, 0.25) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 70% 30%, rgba(168, 85, 247, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 95% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 45%),
+    radial-gradient(ellipse 50% 40% at 85% 80%, rgba(14, 165, 233, 0.12) 0%, transparent 50%),
+    var(--bg);
+}
+
 .glass {
   background: var(--surface);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
   border: 1px solid var(--border);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+html.dark .glass {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 :focus-visible {
@@ -48,34 +97,33 @@ input:focus:not(:focus-visible) {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: white;
+  background: var(--accent);
+  color: #ffffff;
   font-weight: 600;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+  background: var(--accent-hover);
 }
 .btn-primary:active:not(:disabled) {
-  transform: translateY(0);
+  transform: translateY(1px);
 }
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
 .btn-ghost {
   background: transparent;
   border: 1px solid var(--border-strong);
   color: var(--ink);
-  transition: all 0.2s ease;
+  font-weight: 500;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 .btn-ghost:hover:not(:disabled) {
   background: var(--accent-soft);
+  border-color: var(--accent);
 }
 
 .progress-fill {
@@ -83,7 +131,7 @@ input:focus:not(:focus-visible) {
 }
 
 .room-code {
-  letter-spacing: 0.22em;
+  letter-spacing: 0.18em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -105,6 +153,9 @@ input:focus:not(:focus-visible) {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(15, 23, 42, 0.15);
   border-radius: 4px;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
 }

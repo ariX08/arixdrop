@@ -17,9 +17,10 @@ const CHECK_RISE = 8;
 const SINK_FADE = 0.6;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-const digitsOf = (raw: any) => String(raw ?? '').replace(/\D/g, '');
+// Accept A-Z and 0-9 only (room codes are alphanumeric)
+const charsOf = (raw: any) => String(raw ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const toSlots = (raw: any, n: number) => {
-  const d = digitsOf(raw).slice(0, n);
+  const d = charsOf(raw).slice(0, n);
   return Array.from({ length: n }, (_, i) => d[i] ?? '');
 };
 const firstEmptyOf = (slots: string[]) => {
@@ -51,7 +52,7 @@ export default function CodeSlots({
   settle = 0.3,
   rise = 8,
   cascade = 20,
-  ariaLabel = 'One-time code',
+  ariaLabel = 'Room code',
   className = ''
 }: {
   length?: number;
@@ -95,7 +96,7 @@ export default function CodeSlots({
   const draining = useRef(false);
   const drainTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const statusRef = useRef(status);
-  const emitted = useRef(digitsOf(value ?? defaultValue).slice(0, length));
+  const emitted = useRef(charsOf(value ?? defaultValue).slice(0, length));
   const slotsRef = useRef(slots);
   slotsRef.current = slots;
   const live = useRef({ settle, bounce, cascade, reduce });
@@ -189,13 +190,13 @@ export default function CodeSlots({
   );
 
   const insert = (raw: string, from = active) => {
-    const digits = digitsOf(raw);
-    if (!digits) return;
+    const chars = charsOf(raw);
+    if (!chars) return;
     const next = [...slotsRef.current];
     const crossed: number[] = [];
     const step = reduce ? 0 : cascade;
     let i = from;
-    for (const ch of digits) {
+    for (const ch of chars) {
       if (i >= length) break;
       next[i] = ch;
       land(i, (i - from) * step);
@@ -222,7 +223,8 @@ export default function CodeSlots({
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (busy || e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key;
-    if (/^[0-9]$/.test(k)) {
+    // Allow A-Z and 0-9
+    if (/^[a-zA-Z0-9]$/.test(k)) {
       e.preventDefault();
       insert(k);
     } else if (k === 'Backspace') {
@@ -253,7 +255,7 @@ export default function CodeSlots({
   };
   const onInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (busy) return;
-    const d = digitsOf(e.target.value);
+    const d = charsOf(e.target.value);
     if (!d) return;
     insert(d, d.length === 1 ? active : 0);
   };
@@ -287,7 +289,7 @@ export default function CodeSlots({
 
   useEffect(() => {
     if (value === undefined) return;
-    const clean = digitsOf(value).slice(0, length);
+    const clean = charsOf(value).slice(0, length);
     if (clean === emitted.current) return;
     emitted.current = clean;
     const prev = slotsRef.current;
@@ -358,10 +360,7 @@ export default function CodeSlots({
     const L = live.current;
     const step = L.reduce ? 0 : L.cascade;
     filled.forEach((i, k) => drive(i, 0, k * step));
-    moveActive(
-      0,
-      slotsRef.current.map((_, j) => j)
-    );
+    moveActive(0, slotsRef.current.map((_, j) => j));
     clearTimeout(drainTimer.current);
     drainTimer.current = setTimeout(
       () => {
@@ -372,13 +371,9 @@ export default function CodeSlots({
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
-  useEffect(() => {
-    statusRef.current = status;
-  }, [status]);
+  useEffect(() => { statusRef.current = status; }, [status]);
   useEffect(() => () => clearTimeout(drainTimer.current), []);
-  useEffect(() => {
-    if (autoFocus) inputRef.current?.focus();
-  }, [autoFocus]);
+  useEffect(() => { if (autoFocus) inputRef.current?.focus(); }, [autoFocus]);
 
   const view = slots.length === length ? slots : Array.from({ length }, (_, i) => slots[i] ?? '');
   const showCaret =
@@ -412,9 +407,10 @@ export default function CodeSlots({
           ref={inputRef}
           className="code-slots__input"
           type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="[0-9]*"
+          inputMode="text"
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
           value=""
           maxLength={length}
           aria-label={ariaLabel}
@@ -454,7 +450,7 @@ export default function CodeSlots({
         </motion.span>
       </div>
       <span id={`${uid}-count`} className="code-slots__sr" aria-live="polite">
-        {status === 'success' ? 'Code accepted' : `${view.filter(Boolean).length} of ${length} digits entered`}
+        {status === 'success' ? 'Code accepted' : `${view.filter(Boolean).length} of ${length} characters entered`}
       </span>
     </div>
   );

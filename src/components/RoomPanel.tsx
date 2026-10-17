@@ -352,7 +352,6 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
       }
     }
 
-    // Auto-zip if multiple files
     let filesToSend = selected;
     if (selected.length > 1) {
       setZipping(true);
@@ -528,11 +527,11 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
         {state === "idle" && (
           <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-5">
-              <span className="text-sm font-medium text-white/50">Room</span>
-              <span className="text-xs text-white/30 tabular-nums">—</span>
+              <span className="text-sm font-medium text-[var(--muted)]">Room</span>
+              <span className="text-xs text-[var(--muted)] tabular-nums opacity-60">—</span>
             </div>
             <div
-              className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] min-h-[200px] flex flex-col items-center justify-center gap-4 px-6 text-center cursor-pointer hover:bg-white/[0.05] hover:border-white/25 transition-colors"
+              className="rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--accent-soft)]/30 min-h-[200px] flex flex-col items-center justify-center gap-4 px-6 text-center cursor-pointer hover:bg-[var(--accent-soft)]/50 hover:border-blue-400/40 transition-colors"
               onClick={handleSendClick}
               onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-blue-400/50"); }}
               onDragLeave={(e) => e.currentTarget.classList.remove("border-blue-400/50")}
@@ -543,14 +542,14 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
               }}
             >
               <div className="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-blue-400">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-blue-500">
                   <path d="M12 16V8M12 8L8.5 11.5M12 8l3.5 3.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
                   <path d="M4 18h16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-white/80">Drop files here or click</p>
-                <p className="text-xs text-white/40 mt-1">Multiple files → auto zipped</p>
+                <p className="text-sm font-medium text-[var(--ink)]">Drop files here or click</p>
+                <p className="text-xs text-[var(--muted)] mt-1">Multiple files → auto zipped</p>
               </div>
               <button
                 type="button"
@@ -567,40 +566,40 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
         {(state === "creating" || state === "connecting" || zipping) && (
           <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-6">
-              <span className="text-sm font-medium text-white/60">
+              <span className="text-sm font-medium text-[var(--muted)]">
                 {zipping ? "Zipping files…" : state === "connecting" ? "Joining room…" : "Creating room…"}
               </span>
-              <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              <span className="inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
-            <p className="text-sm text-white/40 text-center py-10">{statusLine || "Working…"}</p>
+            <p className="text-sm text-[var(--muted)] text-center py-10">{statusLine || "Working…"}</p>
           </motion.div>
         )}
 
         {state === "waiting" && (
           <motion.div key="waiting" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-5">
-              <span className="text-sm font-medium text-white">
+              <span className="text-sm font-medium text-[var(--ink)]">
                 {role === "receiver" ? "Joined room" : "Room ready"}
               </span>
-              <span className="text-xs text-white/40 tabular-nums">Expires in {formatTTL(ttl)}</span>
+              <span className="text-xs text-[var(--muted)] tabular-nums">Expires in {formatTTL(ttl)}</span>
             </div>
 
             <div className="mb-6">
-              <label className="block text-xs font-medium text-white/40 mb-2">Room code</label>
+              <label className="block text-xs font-medium text-[var(--muted)] mb-2">Room code</label>
               <div className="flex items-center gap-3 flex-wrap">
-                <p className="room-code font-[family-name:var(--font-instrument)] font-semibold text-2xl sm:text-3xl text-white select-all tracking-widest">
+                <p className="room-code font-[family-name:var(--font-instrument)] font-semibold text-2xl sm:text-3xl text-[var(--ink)] select-all tracking-widest">
                   {roomCode}
                 </p>
                 {role === "sender" && (
-                  <button type="button" onClick={() => copy(roomCode, "code")} className="h-9 px-3 rounded-lg border border-white/15 text-sm font-medium text-white/80 hover:bg-white/5 transition">
+                  <button type="button" onClick={() => copy(roomCode, "code")} className="h-9 px-3 rounded-lg border border-[var(--border-strong)] text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)] transition">
                     {copyFeedback === "code" ? "Copied" : "Copy"}
                   </button>
                 )}
               </div>
               {role === "sender" && roomLink && (
                 <div className="mt-3 flex gap-2">
-                  <input type="text" readOnly value={roomLink} className="flex-1 h-10 px-3 rounded-lg border border-white/10 bg-white/5 text-sm font-mono text-white/70 truncate" />
-                  <button type="button" onClick={() => copy(roomLink, "link")} className="h-10 px-3 rounded-lg border border-white/15 text-sm font-medium text-white/80 hover:bg-white/5 shrink-0 transition">
+                  <input type="text" readOnly value={roomLink} className="flex-1 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-sm font-mono text-[var(--muted)] truncate" />
+                  <button type="button" onClick={() => copy(roomLink, "link")} className="h-10 px-3 rounded-lg border border-[var(--border-strong)] text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)] shrink-0 transition">
                     {copyFeedback === "link" ? "Copied" : "Copy link"}
                   </button>
                 </div>
@@ -608,19 +607,19 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
             </div>
 
             {role === "sender" && pendingNames.length > 0 && (
-              <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                <p className="text-xs font-medium text-white/40 mb-2">Ready to send</p>
+              <div className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--accent-soft)]/20 p-3">
+                <p className="text-xs font-medium text-[var(--muted)] mb-2">Ready to send</p>
                 <ul className="space-y-1">
                   {pendingNames.map((name) => (
-                    <li key={name} className="text-sm text-white/70 truncate">{name}</li>
+                    <li key={name} className="text-sm text-[var(--ink)] truncate">{name}</li>
                   ))}
                 </ul>
               </div>
             )}
 
             <div className="flex items-center justify-between gap-3 mb-4">
-              <p className="text-sm text-white/50">{statusLine}</p>
-              <span className="text-xs font-medium tabular-nums text-white/40">{peerCount}/2</span>
+              <p className="text-sm text-[var(--muted)]">{statusLine}</p>
+              <span className="text-xs font-medium tabular-nums text-[var(--muted)]">{peerCount}/2</span>
             </div>
 
             {role === "sender" && (
@@ -629,7 +628,7 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
               </button>
             )}
 
-            <button type="button" onClick={reset} className="w-full mt-3 h-10 rounded-xl text-sm text-white/40 hover:text-white/70 transition">
+            <button type="button" onClick={reset} className="w-full mt-3 h-10 rounded-xl text-sm text-[var(--muted)] hover:text-[var(--ink)] transition">
               Cancel
             </button>
           </motion.div>
@@ -638,29 +637,29 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
         {(state === "transfer" || state === "complete") && (
           <motion.div key="transfer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-5">
-              <span className="text-sm font-medium text-white">
+              <span className="text-sm font-medium text-[var(--ink)]">
                 {state === "complete" ? "Transfer complete" : "Transferring…"}
               </span>
-              <span className="text-xs text-white/40 tabular-nums">{speed}</span>
+              <span className="text-xs text-[var(--muted)] tabular-nums">{speed}</span>
             </div>
 
             <div className="mb-5">
-              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+              <div className="h-2 rounded-full bg-[var(--border)] overflow-hidden">
                 <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 progress-fill" style={{ width: `${Math.round(overall * 100)}%` }} />
               </div>
-              <p className="text-xs text-white/40 mt-1.5 tabular-nums">{Math.round(overall * 100)}%</p>
+              <p className="text-xs text-[var(--muted)] mt-1.5 tabular-nums">{Math.round(overall * 100)}%</p>
             </div>
 
             <ul className="space-y-3 max-h-48 overflow-y-auto">
               {files.map((f) => (
                 <li key={f.name} className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white/80 truncate">{f.name}</p>
-                    <div className="h-1 mt-1 rounded-full bg-white/10 overflow-hidden">
+                    <p className="text-sm text-[var(--ink)] truncate">{f.name}</p>
+                    <div className="h-1 mt-1 rounded-full bg-[var(--border)] overflow-hidden">
                       <div className="h-full rounded-full bg-blue-400/80 progress-fill" style={{ width: `${Math.round(f.progress * 100)}%` }} />
                     </div>
                   </div>
-                  <span className="text-xs text-white/40 tabular-nums shrink-0">
+                  <span className="text-xs text-[var(--muted)] tabular-nums shrink-0">
                     {f.status === "done" ? "Done" : formatBytes(f.size)}
                   </span>
                 </li>
@@ -678,13 +677,13 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
         {state === "error" && (
           <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8 text-center">
             <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-400">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-500">
                 <path d="M12 8v5M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
               </svg>
             </div>
-            <h3 className="font-medium text-white mb-1">{errorTitle}</h3>
-            <p className="text-sm text-white/50 mb-6">{errorDetail}</p>
+            <h3 className="font-medium text-[var(--ink)] mb-1">{errorTitle}</h3>
+            <p className="text-sm text-[var(--muted)] mb-6">{errorDetail}</p>
             <button type="button" onClick={reset} className="h-11 px-6 rounded-xl btn-primary text-sm">
               Try again
             </button>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, IBM_Plex_Sans, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { Instrument_Sans, IBM_Plex_Sans, JetBrains_Mono, Story_Script } from "next/font/google";
+import { SiteBackground } from "@/components/SiteBackground";
 import "./globals.css";
 
 const instrument = Instrument_Sans({
@@ -16,11 +17,11 @@ const ibmPlex = IBM_Plex_Sans({
   weight: ["400", "500", "600"],
 });
 
-const jakarta = Plus_Jakarta_Sans({
+const storyScript = Story_Script({
   subsets: ["latin"],
   variable: "--font-brand",
   display: "swap",
-  weight: ["600", "700", "800"],
+  weight: "400",
 });
 
 const jetbrains = JetBrains_Mono({
@@ -31,11 +32,11 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pigeon — Send files directly",
+  title: "pigeon — send files directly",
   description:
     "Transfer files peer-to-peer between devices. No upload, no account, no permanent storage. End-to-end encrypted via WebRTC.",
   openGraph: {
-    title: "Pigeon — Send files directly",
+    title: "pigeon — send files directly",
     description:
       "Fast P2P file transfer. Create a room, share a code or link, files move device-to-device.",
     type: "website",
@@ -50,7 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${instrument.variable} ${ibmPlex.variable} ${jakarta.variable} ${jetbrains.variable}`}
+      className={`${instrument.variable} ${ibmPlex.variable} ${storyScript.variable} ${jetbrains.variable}`}
       suppressHydrationWarning
     >
       <head>
@@ -60,7 +61,8 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-[var(--bg)] text-[var(--ink)] font-[family-name:var(--font-ibm-plex)] antialiased min-h-dvh flex flex-col relative overflow-x-hidden">
+      <body className="bg-transparent text-[var(--ink)] font-[family-name:var(--font-ibm-plex)] antialiased min-h-dvh flex flex-col relative overflow-x-hidden">
+        <SiteBackground />
         {children}
       </body>
     </html>

@@ -45,7 +45,7 @@ function HomeContent() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col hero-gradient">
+    <div className="min-h-dvh flex flex-col relative">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:text-black focus:px-4 focus:py-2 focus:rounded-lg"
@@ -93,10 +93,10 @@ function HomeContent() {
                     stepDuration={0.32}
                     blur={12}
                     distance={28}
-                    className="font-[family-name:var(--font-instrument)] font-semibold text-4xl sm:text-5xl lg:text-[3.4rem] tracking-tight text-[var(--ink)] leading-[1.15] justify-center"
+                    className="font-[family-name:var(--font-instrument)] font-semibold text-4xl sm:text-5xl lg:text-[3.4rem] tracking-tight text-white leading-[1.15] justify-center"
                   />
 
-                  <p className="mt-5 text-base sm:text-lg text-[var(--muted)] max-w-lg mx-auto leading-relaxed">
+                  <p className="mt-5 text-base sm:text-lg text-white/70 max-w-lg mx-auto leading-relaxed">
                     No upload. No account. Files move peer-to-peer over an encrypted connection and disappear when you&apos;re done.
                   </p>
 
@@ -109,8 +109,8 @@ function HomeContent() {
                       textColor="#ffffff"
                       lineColor="#c4b5fd"
                       baseColor="#4c1d95"
-                      intensity={1.1}
-                      idleIntensity={0.4}
+                      intensity={1.15}
+                      idleIntensity={0.45}
                       onClick={onHeroSend}
                     >
                       Send files →
@@ -119,19 +119,19 @@ function HomeContent() {
                       size="md"
                       radius={12}
                       tint="#ffffff"
-                      tintOpacity={0.12}
-                      textColor="var(--ink)"
-                      lineColor="#a1a1aa"
-                      baseColor="#71717a"
-                      intensity={0.85}
-                      idleIntensity={0.3}
+                      tintOpacity={0.14}
+                      textColor="#ffffff"
+                      lineColor="#e4e4e7"
+                      baseColor="#a1a1aa"
+                      intensity={0.9}
+                      idleIntensity={0.35}
                       onClick={() => setJoinOpen(true)}
                     >
                       Enter code
                     </SpecularButton>
                   </div>
 
-                  <p className="mt-8 text-sm text-[var(--muted)]">
+                  <p className="mt-8 text-sm text-white/50">
                     Works on the same network or across the internet.
                   </p>
                 </AnimatedContent>
@@ -156,10 +156,10 @@ function HomeContent() {
           </AnimatePresence>
         </section>
 
-        <section id="how" className="border-t border-[var(--border)] bg-[var(--bg)]/70">
+        <section id="how" className="border-t border-white/10 bg-black/20 backdrop-blur-sm">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
             <AnimatedContent distance={48} duration={0.7} stagger={0.1} threshold={0.12}>
-              <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-[var(--ink)] text-center mb-12">
+              <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-white text-center mb-12">
                 How it works
               </h2>
               <ol className="grid sm:grid-cols-3 gap-10 list-none">
@@ -181,11 +181,11 @@ function HomeContent() {
                   },
                 ].map((item) => (
                   <li key={item.n}>
-                    <span className="font-[family-name:var(--font-instrument)] font-semibold text-[var(--accent)] text-sm tabular-nums mb-2 block">
+                    <span className="font-[family-name:var(--font-instrument)] font-semibold text-violet-300 text-sm tabular-nums mb-2 block">
                       {item.n}
                     </span>
-                    <h3 className="font-medium text-[var(--ink)] mb-1.5">{item.title}</h3>
-                    <p className="text-sm text-[var(--muted)] leading-relaxed">{item.body}</p>
+                    <h3 className="font-medium text-white mb-1.5">{item.title}</h3>
+                    <p className="text-sm text-white/60 leading-relaxed">{item.body}</p>
                   </li>
                 ))}
               </ol>
@@ -213,7 +213,7 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="min-h-dvh bg-[var(--bg)]" />}>
+    <Suspense fallback={<div className="min-h-dvh" />}>
       <HomeContent />
     </Suspense>
   );

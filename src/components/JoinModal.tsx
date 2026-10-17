@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import CodeSlots from "./CodeSlots";
+import { TurnstileWidget } from "./TurnstileWidget";
+
+const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
 interface JoinModalProps {
   open: boolean;
@@ -14,11 +17,13 @@ interface JoinModalProps {
 export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModalProps) {
   const [code, setCode] = useState(initialCode);
   const [status, setStatus] = useState<"idle" | "error" | "success">("idle");
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setCode(initialCode.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6));
       setStatus("idle");
+      setToken(null);
     }
   }, [open, initialCode]);
 
@@ -30,13 +35,19 @@ export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModal
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  function handleComplete(value: string) {
+  function tryJoin(value: string) {
     const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    if (cleaned.length === 6) {
-      setStatus("success");
-      setTimeout(() => onJoin(cleaned), 400);
+    if (cleaned.length !== 6) return;
+    if (SITE_KEY && !token) {
+      setStatus("error");
+      return;
     }
+    setStatus("success");
+    setTimeout(() => onJoin(cleaned), 350);
   }
+
+  const codeReady = code.replace(/[^A-Z0-9]/gi, "").length === 6;
+  const canJoin = codeReady && (!SITE_KEY || !!token);
 
   return (
     <AnimatePresence>
@@ -55,7 +66,7 @@ export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModal
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.98 }}
             transition={{ type: "spring", duration: 0.4, bounce: 0.25 }}
-            className="relative w-full max-w-md rounded-2xl glass-strong p-6 sm:p-8 shadow-2xl"
+            className="relative w-full max-w-md rounded-2xl glass p-6 sm:p-8 shadow-2xl"
           >
             <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-xl text-white mb-1">
               Enter room code
@@ -64,7 +75,7 @@ export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModal
               Type the 6-character code from the sender.
             </p>
 
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-5">
               <CodeSlots
                 length={6}
                 value={code}
@@ -72,7 +83,9 @@ export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModal
                   setCode(v.toUpperCase());
                   setStatus("idle");
                 }}
-                onComplete={handleComplete}
+                onComplete={(v) => {
+                  if (!SITE_KEY || token) tryJoin(v);
+                }}
                 status={status}
                 autoFocus
                 accentColor="#3b82f6"
@@ -87,7 +100,16 @@ export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModal
               />
             </div>
 
-            <div className="flex gap-3">
+            <TurnstileWidget
+              onSuccess={(t) => {
+                setToken(t);
+                setStatus("idle");
+              }}
+              onError={() => setToken(null)}
+              onExpire={() => setToken(null)}
+            />
+
+            <div className="flex gap-3 mt-4">
               <button
                 type="button"
                 onClick={onClose}
@@ -97,9 +119,9 @@ export function JoinModal({ open, onClose, onJoin, initialCode = "" }: JoinModal
               </button>
               <button
                 type="button"
-                onClick={() => handleComplete(code)}
-                disabled={code.replace(/[^A-Z0-9]/gi, "").length !== 6}
-                className="flex-1 h-11 rounded-xl btn-primary text-sm"
+                onClick={() => tryJoin(code)}
+                disabled={!canJoin}
+                className="flex-1 h-11 rounded-xl btn-primary text-sm disabled:opacity-40"
               >
                 Join room
               </button>

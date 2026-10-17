@@ -10,15 +10,17 @@ export default function TermsPage() {
   return (
     <>
       <Header />
-      <main className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
-        <h1 className="font-display font-semibold text-3xl tracking-tight text-[var(--ink)]">
+      <main className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16 text-white">
+        <h1 className="font-[family-name:var(--font-instrument)] font-semibold text-3xl tracking-tight text-white">
           Terms & conditions
         </h1>
-        <p className="text-sm text-[var(--muted)] mt-2">Last updated: 17 October 2026</p>
+        <p className="text-sm text-white/75 mt-2">Last updated: 17 October 2026</p>
 
-        <div className="mt-10 space-y-8 text-[var(--muted)] leading-relaxed">
+        <div className="mt-10 space-y-8 text-white/85 leading-relaxed">
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">Agreement</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              Agreement
+            </h2>
             <p>
               By using pigeon you agree to these terms. If you do not agree, do not use the
               service.
@@ -26,7 +28,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">The service</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              The service
+            </h2>
             <p>
               pigeon provides tools to transfer files directly between devices using browser
               technologies (including WebRTC). The service is provided as-is. Availability may
@@ -35,7 +39,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">Your responsibilities</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              Your responsibilities
+            </h2>
             <ul className="list-disc pl-5 space-y-2">
               <li>Only transfer content you have the right to share.</li>
               <li>Do not use pigeon for unlawful, harmful, or abusive purposes.</li>
@@ -45,7 +51,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">No warranty</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              No warranty
+            </h2>
             <p>
               pigeon is provided without warranties of any kind, including uninterrupted access,
               error-free operation, or fitness for a particular purpose. Transfers may fail due to
@@ -54,7 +62,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">Limitation of liability</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              Limitation of liability
+            </h2>
             <p>
               To the fullest extent permitted by law, pigeon and its operator are not liable for
               indirect, incidental, or consequential damages, or for loss of data arising from use
@@ -63,7 +73,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">Changes</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              Changes
+            </h2>
             <p>
               We may update these terms from time to time. Continued use after changes means you
               accept the updated terms. The date at the top of this page reflects the latest update.
@@ -71,11 +83,13 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">Contact</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              Contact
+            </h2>
             <p>
               <a
                 href="https://arix.faltuworkonly91.workers.dev"
-                className="text-[var(--ink)] underline underline-offset-2"
+                className="text-white underline underline-offset-2"
                 target="_blank"
                 rel="noopener noreferrer"
               >

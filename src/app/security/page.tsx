@@ -10,13 +10,17 @@ export default function SecurityPage() {
   return (
     <>
       <Header />
-      <main className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
-        <h1 className="font-display font-semibold text-3xl tracking-tight text-[var(--ink)]">Security</h1>
-        <p className="text-sm text-[var(--muted)] mt-2">Last updated: 17 October 2026</p>
+      <main className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16 text-white">
+        <h1 className="font-[family-name:var(--font-instrument)] font-semibold text-3xl tracking-tight text-white">
+          Security
+        </h1>
+        <p className="text-sm text-white/75 mt-2">Last updated: 17 October 2026</p>
 
-        <div className="mt-10 space-y-8 text-[var(--muted)] leading-relaxed">
+        <div className="mt-10 space-y-8 text-white/85 leading-relaxed">
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">Direct transfer</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              Direct transfer
+            </h2>
             <p>
               After two devices connect, file data is intended to move over a WebRTC DataChannel
               between those devices. pigeon is not designed to store your files on a central
@@ -25,7 +29,9 @@ export default function SecurityPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">Encryption in transit</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              Encryption in transit
+            </h2>
             <p>
               WebRTC connections use DTLS for media and data channels in modern browsers. Signaling
               (room codes and session negotiation) uses HTTPS/WSS to the signaling worker.
@@ -33,7 +39,9 @@ export default function SecurityPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">Room codes</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              Room codes
+            </h2>
             <p>
               Anyone who has the active room code or link can attempt to join that room while it is
               open. Treat codes like a temporary shared secret. Do not post codes publicly if the
@@ -42,7 +50,9 @@ export default function SecurityPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">What we cannot guarantee</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              What we cannot guarantee
+            </h2>
             <ul className="list-disc pl-5 space-y-2">
               <li>Security of devices you control (malware, unlocked screens).</li>
               <li>Correct recipient if you share a code with the wrong person.</li>
@@ -52,7 +62,9 @@ export default function SecurityPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">Recommendations</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              Recommendations
+            </h2>
             <ul className="list-disc pl-5 space-y-2">
               <li>Share codes through a channel you already trust.</li>
               <li>Confirm the other device shows the same room code before sending.</li>
@@ -62,12 +74,14 @@ export default function SecurityPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-lg text-[var(--ink)] mb-2">Reporting issues</h2>
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-lg text-white mb-2">
+              Reporting issues
+            </h2>
             <p>
               Security concerns can be reported via{" "}
               <a
                 href="https://arix.faltuworkonly91.workers.dev"
-                className="text-[var(--ink)] underline underline-offset-2"
+                className="text-white underline underline-offset-2"
                 target="_blank"
                 rel="noopener noreferrer"
               >

@@ -8,28 +8,22 @@ export function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-black/40 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-white/5 bg-black/40 backdrop-blur-xl">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-        {/* Extreme left */}
         <a href="/" className="flex items-center gap-2.5 group" aria-label="Pigeon home">
-          <span className="w-7 h-7 rounded-lg bg-[var(--accent-soft)] border border-[var(--border)] flex items-center justify-center overflow-hidden">
-            <Image
-              src="/logo.svg"
-              alt=""
-              width={18}
-              height={18}
-              style={{
-                filter:
-                  "brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(202deg) brightness(98%) contrast(96%)",
-              }}
-            />
-          </span>
+          <Image
+            src="/logo.svg"
+            alt="Pigeon"
+            width={28}
+            height={28}
+            className="shrink-0"
+            priority
+          />
           <span className="font-[family-name:var(--font-instrument)] font-semibold text-lg tracking-tight text-white">
             Pigeon
           </span>
         </a>
 
-        {/* Extreme right */}
         <nav className="hidden sm:flex items-center gap-8 text-sm text-white/60" aria-label="Primary">
           <a href="/#how" className="hover:text-white transition-colors">How it works</a>
           <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>
@@ -60,7 +54,7 @@ export function Header() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="sm:hidden overflow-hidden border-t border-[var(--border)] bg-black/50"
+            className="sm:hidden overflow-hidden border-t border-white/5 bg-black/50"
           >
             <nav className="flex flex-col px-4 py-3 text-sm">
               {["How it works", "Privacy", "Security"].map((label, i) => (

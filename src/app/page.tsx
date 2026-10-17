@@ -7,6 +7,9 @@ import { Footer } from "@/components/Footer";
 import { RoomPanel } from "@/components/RoomPanel";
 import { JoinModal } from "@/components/JoinModal";
 import GradientASCII from "@/components/GradientASCII";
+import AnimatedContent from "@/components/AnimatedContent";
+import SpecularButton from "@/components/SpecularButton";
+import BlurText from "@/components/BlurText";
 import { motion, AnimatePresence } from "motion/react";
 
 function HomeContent() {
@@ -79,42 +82,70 @@ function HomeContent() {
             {!sessionActive ? (
               <motion.div
                 key="hero"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0, y: -12, scale: 0.98 }}
-                transition={{ duration: 0.4 }}
+                transition={{ duration: 0.35 }}
               >
-                <h1 className="font-[family-name:var(--font-instrument)] font-semibold text-4xl sm:text-5xl lg:text-[3.25rem] tracking-tight text-white leading-[1.1]">
-                  Send files directly<br />between devices
-                </h1>
-                <p className="mt-5 text-base sm:text-lg text-white/55 max-w-md mx-auto leading-relaxed">
-                  No upload. No account. Files move peer-to-peer over an encrypted connection and disappear when you&apos;re done.
-                </p>
+                <AnimatedContent
+                  distance={40}
+                  direction="vertical"
+                  duration={0.75}
+                  trigger="mount"
+                  stagger={0.1}
+                  className="flex flex-col items-center"
+                >
+                  <BlurText
+                    text="Send files directly between devices"
+                    animateBy="words"
+                    direction="top"
+                    trigger="load"
+                    delay={80}
+                    stepDuration={0.32}
+                    blur={12}
+                    distance={28}
+                    className="font-[family-name:var(--font-instrument)] font-semibold text-4xl sm:text-5xl lg:text-[3.25rem] tracking-tight text-white leading-[1.12] justify-center"
+                  />
 
-                <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <button
-                    type="button"
-                    onClick={onHeroSend}
-                    className="btn-primary inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full text-base w-full sm:w-auto"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                      <path d="M9 12V4M9 4L5.5 7.5M9 4l3.5 3.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M3 14h12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-                    </svg>
-                    Send files
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setJoinOpen(true)}
-                    className="btn-ghost inline-flex items-center justify-center h-12 px-8 rounded-full text-base font-medium w-full sm:w-auto"
-                  >
-                    Enter code
-                  </button>
-                </div>
+                  <p className="mt-5 text-base sm:text-lg text-white/55 max-w-md mx-auto leading-relaxed">
+                    No upload. No account. Files move peer-to-peer over an encrypted connection and disappear when you&apos;re done.
+                  </p>
 
-                <p className="mt-6 text-sm text-white/40">
-                  Works on the same network or across the internet.
-                </p>
+                  <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <SpecularButton
+                      size="md"
+                      radius={999}
+                      tint="#3b82f6"
+                      tintOpacity={0.95}
+                      textColor="#ffffff"
+                      lineColor="#93c5fd"
+                      baseColor="#1e40af"
+                      intensity={1.15}
+                      idleIntensity={0.45}
+                      onClick={onHeroSend}
+                    >
+                      Send files
+                    </SpecularButton>
+                    <SpecularButton
+                      size="md"
+                      radius={999}
+                      tint="#ffffff"
+                      tintOpacity={0.08}
+                      textColor="#f5f5f5"
+                      lineColor="#ffffff"
+                      baseColor="#525252"
+                      intensity={0.9}
+                      idleIntensity={0.3}
+                      onClick={() => setJoinOpen(true)}
+                    >
+                      Enter code
+                    </SpecularButton>
+                  </div>
+
+                  <p className="mt-6 text-sm text-white/40">
+                    Works on the same network or across the internet.
+                  </p>
+                </AnimatedContent>
               </motion.div>
             ) : (
               <motion.div
@@ -138,36 +169,38 @@ function HomeContent() {
 
         <section id="how" className="border-t border-white/5">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-white text-center mb-12">
-              How it works
-            </h2>
-            <ol className="grid sm:grid-cols-3 gap-8 list-none text-center sm:text-left">
-              {[
-                {
-                  n: "01",
-                  title: "Create a room",
-                  body: "Select files. Pigeon generates a 6-character code and a one-time link.",
-                },
-                {
-                  n: "02",
-                  title: "Share the code",
-                  body: "The recipient opens the link or types the code. Devices negotiate a direct connection.",
-                },
-                {
-                  n: "03",
-                  title: "Send & done",
-                  body: "When both devices are in the room, press Send. Data moves device-to-device.",
-                },
-              ].map((item) => (
-                <li key={item.n}>
-                  <span className="font-[family-name:var(--font-instrument)] font-semibold text-blue-400 text-sm tabular-nums mb-2 block">
-                    {item.n}
-                  </span>
-                  <h3 className="font-medium text-white mb-1.5">{item.title}</h3>
-                  <p className="text-sm text-white/50 leading-relaxed">{item.body}</p>
-                </li>
-              ))}
-            </ol>
+            <AnimatedContent distance={50} duration={0.7} stagger={0.1} threshold={0.15}>
+              <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-white text-center mb-12">
+                How it works
+              </h2>
+              <ol className="grid sm:grid-cols-3 gap-8 list-none text-center sm:text-left">
+                {[
+                  {
+                    n: "01",
+                    title: "Create a room",
+                    body: "Select files. Pigeon generates a 6-character code and a one-time link.",
+                  },
+                  {
+                    n: "02",
+                    title: "Share the code",
+                    body: "The recipient opens the link or types the code. Devices negotiate a direct connection.",
+                  },
+                  {
+                    n: "03",
+                    title: "Send & done",
+                    body: "When both devices are in the room, press Send. Data moves device-to-device.",
+                  },
+                ].map((item) => (
+                  <li key={item.n}>
+                    <span className="font-[family-name:var(--font-instrument)] font-semibold text-blue-400 text-sm tabular-nums mb-2 block">
+                      {item.n}
+                    </span>
+                    <h3 className="font-medium text-white mb-1.5">{item.title}</h3>
+                    <p className="text-sm text-white/50 leading-relaxed">{item.body}</p>
+                  </li>
+                ))}
+              </ol>
+            </AnimatedContent>
           </div>
         </section>
       </main>

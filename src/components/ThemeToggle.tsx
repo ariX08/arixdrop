@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { allowsCategory, COOKIE_CONSENT_EVENT, readConsent } from "@/lib/cookies";
 
 type Mode = "system" | "light" | "dark";
 
@@ -14,28 +15,61 @@ function applyTheme(mode: Mode) {
   document.documentElement.classList.toggle("dark", resolveDark(mode));
 }
 
+function canPersistTheme(): boolean {
+  // Before any consent choice, allow theme for this session only (no write if preferences off later)
+  const consent = readConsent();
+  if (!consent) return true;
+  return allowsCategory("preferences", consent);
+}
+
 export function ThemeToggle() {
   const [mode, setMode] = useState<Mode>("system");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    let stored = localStorage.getItem("pigeon-theme");
-    if (stored !== "light" && stored !== "dark" && stored !== "system") {
-      stored = "system";
-      localStorage.setItem("pigeon-theme", "system");
+    let stored: Mode = "system";
+    try {
+      const raw = localStorage.getItem("pigeon-theme");
+      if (raw === "light" || raw === "dark" || raw === "system") stored = raw;
+    } catch {
+      /* ignore */
     }
-    const next = stored as Mode;
-    setMode(next);
-    applyTheme(next);
+
+    // If preferences cookies are off, do not restore a stored theme — follow device
+    if (readConsent() && !allowsCategory("preferences")) {
+      stored = "system";
+    }
+
+    setMode(stored);
+    applyTheme(stored);
     setMounted(true);
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {
       const current = (localStorage.getItem("pigeon-theme") as Mode | null) || "system";
-      if (current === "system") applyTheme("system");
+      const effective =
+        readConsent() && !allowsCategory("preferences") ? "system" : current === "system" || !current ? "system" : current;
+      if (effective === "system") applyTheme("system");
     };
     mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+
+    const onConsent = () => {
+      if (!allowsCategory("preferences")) {
+        setMode("system");
+        applyTheme("system");
+        try {
+          localStorage.removeItem("pigeon-theme");
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+    window.addEventListener(COOKIE_CONSENT_EVENT, onConsent);
+
+    return () => {
+      mq.removeEventListener("change", onChange);
+      window.removeEventListener(COOKIE_CONSENT_EVENT, onConsent);
+    };
   }, []);
 
   function cycle() {
@@ -43,8 +77,14 @@ export function ThemeToggle() {
     const i = order.indexOf(mode);
     const next = order[(i + 1) % order.length];
     setMode(next);
-    localStorage.setItem("pigeon-theme", next);
     applyTheme(next);
+    if (canPersistTheme()) {
+      try {
+        localStorage.setItem("pigeon-theme", next);
+      } catch {
+        /* ignore */
+      }
+    }
   }
 
   const label =

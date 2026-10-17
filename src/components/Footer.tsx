@@ -1,3 +1,7 @@
+"use client";
+
+import { openCookieSettings } from "@/lib/cookies";
+
 export function Footer() {
   return (
     <footer className="border-t border-[var(--border)] mt-auto">
@@ -10,11 +14,28 @@ export function Footer() {
             </p>
           </div>
           <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm text-[var(--muted)]">
-            <a href="/privacy" className="hover:text-[var(--ink)] transition-colors">Privacy policy</a>
-            <a href="/terms" className="hover:text-[var(--ink)] transition-colors">Terms & conditions</a>
-            <a href="/security" className="hover:text-[var(--ink)] transition-colors">Security</a>
-            <a href="/cookies" className="hover:text-[var(--ink)] transition-colors">Cookies</a>
-            <a href="/#how" className="hover:text-[var(--ink)] transition-colors">How it works</a>
+            <a href="/privacy" className="hover:text-[var(--ink)] transition-colors">
+              Privacy policy
+            </a>
+            <a href="/terms" className="hover:text-[var(--ink)] transition-colors">
+              Terms & conditions
+            </a>
+            <a href="/security" className="hover:text-[var(--ink)] transition-colors">
+              Security
+            </a>
+            <a href="/cookies" className="hover:text-[var(--ink)] transition-colors">
+              Cookies
+            </a>
+            <a href="/#how" className="hover:text-[var(--ink)] transition-colors">
+              How it works
+            </a>
+            <button
+              type="button"
+              onClick={() => openCookieSettings()}
+              className="text-left hover:text-[var(--ink)] transition-colors"
+            >
+              Cookie settings
+            </button>
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-[var(--border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm text-[var(--muted)]">
@@ -25,7 +46,7 @@ export function Footer() {
               href="https://arix.faltuworkonly91.workers.dev"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[var(--ink)] font-medium hover:text-blue-500 transition-colors"
+              className="text-[var(--ink)] font-medium hover:text-[var(--accent)] transition-colors"
             >
               ARITRA.DESIGN
             </a>

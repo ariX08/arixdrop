@@ -21,29 +21,16 @@ function HomeContent() {
 
   return (
     <>
-      {/* Background – lower opacity so content stays readable */}
+      {/* Exact React Bits GradientASCII with the props you specified */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <GradientASCII
-          colors={['#67e8f9', '#22d3ee', '#3b82f6', '#1e3a8a']}
+          colors={['#1e3fd8', '#f6f8ff', '#a5d8ff', '#38bdf8']}
           shape="horizon"
-          characters="  .=+xX0S8#@"
-          cellSize={14}
-          density={0.85}
-          glyphOpacity={0.55}
-          gradientOpacity={0.7}
-          glow={0.18}
-          flicker={0.1}
-          softness={0.55}
-          scale={1.15}
-          flow={0.35}
-          speed={0.45}
-          grain={0.03}
-          depthOfField={0.12}
-          mouseInteraction={true}
-          intro={true}
+          characters=" =+xX0S8#@"
+          cellSize={18}
+          density={0.8}
           className="w-full h-full"
         />
-        {/* Strong readable scrim */}
         <div className="absolute inset-0 bg-[var(--scrim)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--bg)]" />
       </div>
@@ -60,7 +47,6 @@ function HomeContent() {
       <main id="main" className="flex-1 relative">
         <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-16 sm:pb-24">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-            {/* Left copy – high contrast */}
             <motion.div
               className="lg:col-span-5 pt-1"
               initial={{ opacity: 0, y: 20 }}
@@ -102,7 +88,6 @@ function HomeContent() {
               </p>
             </motion.div>
 
-            {/* Right panel */}
             <motion.div
               className="lg:col-span-7"
               initial={{ opacity: 0, y: 24 }}
@@ -117,7 +102,6 @@ function HomeContent() {
           </div>
         </section>
 
-        {/* How it works */}
         <section id="how" className="border-t border-[var(--border)]">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
             <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-[var(--ink)] mb-10">

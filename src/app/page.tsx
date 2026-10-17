@@ -21,30 +21,31 @@ function HomeContent() {
 
   return (
     <>
-      {/* Full-site animated background — tuned to match the dense cyan→blue→black look */}
+      {/* Background – lower opacity so content stays readable */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <GradientASCII
           colors={['#67e8f9', '#22d3ee', '#3b82f6', '#1e3a8a']}
           shape="horizon"
           characters="  .=+xX0S8#@"
           cellSize={14}
-          density={0.92}
-          glyphOpacity={0.9}
-          gradientOpacity={0.95}
-          glow={0.25}
-          flicker={0.12}
+          density={0.85}
+          glyphOpacity={0.55}
+          gradientOpacity={0.7}
+          glow={0.18}
+          flicker={0.1}
           softness={0.55}
           scale={1.15}
           flow={0.35}
           speed={0.45}
-          grain={0.04}
-          depthOfField={0.15}
+          grain={0.03}
+          depthOfField={0.12}
           mouseInteraction={true}
           intro={true}
           className="w-full h-full"
         />
-        {/* Strong bottom fade like the reference */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/90" />
+        {/* Strong readable scrim */}
+        <div className="absolute inset-0 bg-[var(--scrim)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--bg)]" />
       </div>
 
       <a
@@ -59,17 +60,17 @@ function HomeContent() {
       <main id="main" className="flex-1 relative">
         <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-16 sm:pb-24">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-            {/* Left copy */}
+            {/* Left copy – high contrast */}
             <motion.div
               className="lg:col-span-5 pt-1"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h1 className="font-[family-name:var(--font-instrument)] font-semibold text-3xl sm:text-4xl lg:text-[2.75rem] tracking-tight text-white leading-[1.15] max-w-[16ch]">
+              <h1 className="font-[family-name:var(--font-instrument)] font-semibold text-3xl sm:text-4xl lg:text-[2.75rem] tracking-tight text-[var(--ink)] leading-[1.15] max-w-[16ch]">
                 Send files directly between devices
               </h1>
-              <p className="mt-5 text-base sm:text-lg text-white/55 max-w-[34ch] leading-relaxed">
+              <p className="mt-5 text-base sm:text-lg text-[var(--muted)] max-w-[34ch] leading-relaxed">
                 No upload. No account. Files move peer-to-peer over an encrypted connection and disappear when you&apos;re done.
               </p>
 
@@ -96,7 +97,7 @@ function HomeContent() {
                 </button>
               </div>
 
-              <p className="mt-5 text-sm text-white/40">
+              <p className="mt-5 text-sm text-[var(--muted)]">
                 Works on the same network or across the internet. Room expires after transfer.
               </p>
             </motion.div>
@@ -117,9 +118,9 @@ function HomeContent() {
         </section>
 
         {/* How it works */}
-        <section id="how" className="border-t border-white/5">
+        <section id="how" className="border-t border-[var(--border)]">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-white mb-10">
+            <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-[var(--ink)] mb-10">
               How it works
             </h2>
             <ol className="grid sm:grid-cols-3 gap-8 list-none">
@@ -141,11 +142,11 @@ function HomeContent() {
                 },
               ].map((item) => (
                 <li key={item.n} className="relative">
-                  <span className="font-[family-name:var(--font-instrument)] font-semibold text-blue-400 text-sm tabular-nums mb-2 block">
+                  <span className="font-[family-name:var(--font-instrument)] font-semibold text-blue-500 text-sm tabular-nums mb-2 block">
                     {item.n}
                   </span>
-                  <h3 className="font-medium text-white mb-1.5">{item.title}</h3>
-                  <p className="text-sm text-white/50 leading-relaxed">{item.body}</p>
+                  <h3 className="font-medium text-[var(--ink)] mb-1.5">{item.title}</h3>
+                  <p className="text-sm text-[var(--muted)] leading-relaxed">{item.body}</p>
                 </li>
               ))}
             </ol>

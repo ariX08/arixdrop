@@ -1,19 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #05070f;
-  --surface: rgba(15, 20, 35, 0.72);
-  --surface-solid: #0f1423;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --ink: #f4f6fb;
-  --muted: #9aa3b8;
+  color-scheme: light dark;
+
+  /* Core tokens using light-dark() */
+  --bg: light-dark(#f4f6f9, #05070f);
+  --bg-elevated: light-dark(#ffffff, #0c101c);
+  --surface: light-dark(rgba(255, 255, 255, 0.78), rgba(15, 20, 35, 0.72));
+  --surface-solid: light-dark(#ffffff, #0f1423);
+  --border: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
+  --border-strong: light-dark(rgba(0, 0, 0, 0.14), rgba(255, 255, 255, 0.14));
+  --ink: light-dark(#0f172a, #f4f6fb);
+  --muted: light-dark(#64748b, #9aa3b8);
   --accent: #3b82f6;
   --accent-hover: #2563eb;
-  --accent-soft: rgba(59, 130, 246, 0.15);
+  --accent-soft: light-dark(rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.15));
   --success: #22c55e;
   --error: #ef4444;
-  --paper: #080b14;
+  --scrim: light-dark(rgba(255, 255, 255, 0.72), rgba(0, 0, 0, 0.55));
 }
 
 html {
@@ -35,7 +39,7 @@ body {
 }
 
 .glass-strong {
-  background: rgba(12, 16, 28, 0.85);
+  background: light-dark(rgba(255, 255, 255, 0.92), rgba(12, 16, 28, 0.88));
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   border: 1px solid var(--border-strong);
@@ -76,14 +80,14 @@ input:focus:not(:focus-visible) {
 }
 
 .btn-ghost {
-  background: transparent;
+  background: light-dark(rgba(0, 0, 0, 0.04), transparent);
   border: 1px solid var(--border-strong);
   color: var(--ink);
   transition: all 0.2s ease;
 }
 .btn-ghost:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.05));
+  border-color: light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.2));
 }
 
 /* Progress */
@@ -116,9 +120,9 @@ input:focus:not(:focus-visible) {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.12));
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: light-dark(rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0.2));
 }

@@ -16,13 +16,15 @@ import { motion, AnimatePresence } from "motion/react";
 
 interface RoomPanelProps {
   joinRequest?: { code: string; nonce: number } | null;
+  initialFiles?: File[] | null;
   onJoinHandled?: () => void;
+  onReset?: () => void;
 }
 
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
-export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
-  const [state, setState] = useState<RoomState>("idle");
+export function RoomPanel({ joinRequest, initialFiles, onJoinHandled, onReset }: RoomPanelProps) {
+  const [state, setState] = useState<RoomState>(initialFiles?.length ? "idle" : "idle");
   const [role, setRole] = useState<"sender" | "receiver" | null>(null);
   const [roomCode, setRoomCode] = useState("");
   const [roomLink, setRoomLink] = useState("");
@@ -39,11 +41,10 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   const [channelReady, setChannelReady] = useState(false);
   const [sending, setSending] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileReady, setTurnstileReady] = useState(!SITE_KEY);
   const [zipping, setZipping] = useState(false);
+  const [awaitingVerify, setAwaitingVerify] = useState(!!(initialFiles && initialFiles.length > 0));
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const selectedFilesRef = useRef<File[]>([]);
+  const selectedFilesRef = useRef<File[]>(initialFiles ?? []);
   const ttlRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const signalingRef = useRef<SignalingClient | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -51,6 +52,18 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   const roleRef = useRef<"sender" | "receiver" | null>(null);
   const makingOffer = useRef(false);
   const lastJoinNonce = useRef<number>(0);
+  const startedFromFiles = useRef(false);
+
+  useEffect(() => {
+    if (initialFiles && initialFiles.length > 0 && !startedFromFiles.current) {
+      selectedFilesRef.current = initialFiles;
+      setPendingNames(initialFiles.map((f) => f.name));
+      setAwaitingVerify(true);
+      setRole("sender");
+      roleRef.current = "sender";
+      startedFromFiles.current = true;
+    }
+  }, [initialFiles]);
 
   const clearTimers = useCallback(() => {
     if (ttlRef.current) clearInterval(ttlRef.current);
@@ -292,15 +305,12 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
 
     let cancelled = false;
     (async () => {
-      if (SITE_KEY && !turnstileToken) {
-        setStatusLine("Complete the verification below first");
-      }
-
       clearTimers();
       disconnectSignaling();
       teardownRtc();
       setRole("receiver");
       roleRef.current = "receiver";
+      setAwaitingVerify(false);
       setState("connecting");
       setStatusLine("Connecting to room…");
       setRoomCode(code);
@@ -328,23 +338,16 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [joinRequest?.nonce, joinRequest?.code]);
 
-  function handleSendClick() {
-    fileInputRef.current?.click();
-  }
-
-  function handleFilesSelected(list: FileList | null) {
-    if (!list || list.length === 0) return;
-    beginSend(Array.from(list));
-  }
-
-  async function beginSend(selected: File[]) {
+  async function confirmAndCreateRoom() {
     if (SITE_KEY && !turnstileToken) {
-      setErrorTitle("Verification required");
-      setErrorDetail("Please complete the Cloudflare check below the drop zone, then try again.");
-      setState("error");
+      setStatusLine("Complete verification to continue");
       return;
     }
 
+    const selected = selectedFilesRef.current;
+    if (!selected.length) return;
+
+    setAwaitingVerify(false);
     let filesToSend = selected;
     if (selected.length > 1) {
       setZipping(true);
@@ -360,8 +363,6 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
         return;
       }
       setZipping(false);
-    } else {
-      setPendingNames(selected.map((f) => f.name));
     }
 
     selectedFilesRef.current = filesToSend;
@@ -476,11 +477,13 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
     setPeerCount(0);
     setSending(false);
     setZipping(false);
+    setAwaitingVerify(false);
     setRoomCode("");
     setRoomLink("");
     selectedFilesRef.current = [];
-    if (fileInputRef.current) fileInputRef.current.value = "";
     setTurnstileToken(null);
+    startedFromFiles.current = false;
+    onReset?.();
   }
 
   function formatTTL(s: number) {
@@ -492,103 +495,84 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
   const canSend =
     role === "sender" && peerCount >= 2 && channelReady && !sending && state === "waiting";
 
+  const canCreate = !SITE_KEY || !!turnstileToken;
+
   return (
     <div className="glass rounded-2xl shadow-2xl overflow-hidden" role="region" aria-label="Transfer room">
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={(e) => handleFilesSelected(e.target.files)}
-      />
-
       <AnimatePresence mode="wait">
-        {state === "idle" && (
-          <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
+        {awaitingVerify && (
+          <motion.div key="verify" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-5">
-              <span className="text-sm font-medium text-[var(--muted)]">Room</span>
-              <span className="text-xs text-[var(--muted)] tabular-nums opacity-60">—</span>
+              <span className="text-sm font-medium text-white">Ready to create room</span>
+              <button type="button" onClick={reset} className="text-xs text-white/40 hover:text-white/70">Cancel</button>
             </div>
-            <div
-              className="rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--accent-soft)]/30 min-h-[200px] flex flex-col items-center justify-center gap-4 px-6 text-center cursor-pointer hover:bg-[var(--accent-soft)]/50 hover:border-blue-400/40 transition-colors"
-              onClick={handleSendClick}
-              onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-blue-400/50"); }}
-              onDragLeave={(e) => e.currentTarget.classList.remove("border-blue-400/50")}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.currentTarget.classList.remove("border-blue-400/50");
-                handleFilesSelected(e.dataTransfer.files);
-              }}
+
+            {pendingNames.length > 0 && (
+              <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <p className="text-xs font-medium text-white/40 mb-2">Files</p>
+                <ul className="space-y-1 max-h-28 overflow-y-auto">
+                  {pendingNames.map((name) => (
+                    <li key={name} className="text-sm text-white/80 truncate">{name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <p className="text-sm text-white/50 mb-3 text-center">Verify you&apos;re human to create the room</p>
+            <TurnstileWidget
+              onSuccess={(token) => setTurnstileToken(token)}
+              onError={() => setTurnstileToken(null)}
+              onExpire={() => setTurnstileToken(null)}
+            />
+
+            <button
+              type="button"
+              onClick={confirmAndCreateRoom}
+              disabled={!canCreate}
+              className="w-full mt-4 h-12 rounded-xl btn-primary text-base disabled:opacity-40"
             >
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-blue-500">
-                  <path d="M12 16V8M12 8L8.5 11.5M12 8l3.5 3.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M4 18h16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--ink)]">Drop files here or click</p>
-                <p className="text-xs text-[var(--muted)] mt-1">Multiple files → auto zipped</p>
-              </div>
-              <button
-                type="button"
-                data-select-files
-                onClick={(e) => { e.stopPropagation(); handleSendClick(); }}
-                className="btn-primary mt-1 h-10 px-5 rounded-xl text-sm"
-              >
-                Select files
-              </button>
-            </div>
-            <div className="mt-4" onClick={(e) => e.stopPropagation()}>
-              <TurnstileWidget
-                onSuccess={(token) => { setTurnstileToken(token); setTurnstileReady(true); }}
-                onError={() => { setTurnstileReady(false); setTurnstileToken(null); }}
-                onExpire={() => setTurnstileToken(null)}
-              />
-              {SITE_KEY && turnstileToken && (
-                <p className="text-xs text-center text-green-500 mt-1">Verified — you can send files</p>
-              )}
-            </div>
+              {canCreate ? "Create room" : "Complete verification…"}
+            </button>
           </motion.div>
         )}
 
-        {(state === "creating" || state === "connecting" || zipping) && (
+        {!awaitingVerify && (state === "creating" || state === "connecting" || zipping) && (
           <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-6">
-              <span className="text-sm font-medium text-[var(--muted)]">
+              <span className="text-sm font-medium text-white/60">
                 {zipping ? "Zipping files…" : state === "connecting" ? "Joining room…" : "Creating room…"}
               </span>
-              <span className="inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
             </div>
-            <p className="text-sm text-[var(--muted)] text-center py-10">{statusLine || "Working…"}</p>
+            <p className="text-sm text-white/40 text-center py-10">{statusLine || "Working…"}</p>
           </motion.div>
         )}
 
-        {state === "waiting" && (
+        {!awaitingVerify && state === "waiting" && (
           <motion.div key="waiting" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-5">
-              <span className="text-sm font-medium text-[var(--ink)]">
+              <span className="text-sm font-medium text-white">
                 {role === "receiver" ? "Joined room" : "Room ready"}
               </span>
-              <span className="text-xs text-[var(--muted)] tabular-nums">Expires in {formatTTL(ttl)}</span>
+              <span className="text-xs text-white/40 tabular-nums">Expires in {formatTTL(ttl)}</span>
             </div>
 
             <div className="mb-6">
-              <label className="block text-xs font-medium text-[var(--muted)] mb-2">Room code</label>
+              <label className="block text-xs font-medium text-white/40 mb-2">Room code</label>
               <div className="flex items-center gap-3 flex-wrap">
-                <p className="room-code font-[family-name:var(--font-instrument)] font-semibold text-2xl sm:text-3xl text-[var(--ink)] select-all tracking-widest">
+                <p className="room-code font-[family-name:var(--font-instrument)] font-semibold text-2xl sm:text-3xl text-white select-all tracking-widest">
                   {roomCode}
                 </p>
                 {role === "sender" && (
-                  <button type="button" onClick={() => copy(roomCode, "code")} className="h-9 px-3 rounded-lg border border-[var(--border-strong)] text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)] transition">
+                  <button type="button" onClick={() => copy(roomCode, "code")} className="h-9 px-3 rounded-lg border border-white/15 text-sm font-medium text-white/80 hover:bg-white/5 transition">
                     {copyFeedback === "code" ? "Copied" : "Copy"}
                   </button>
                 )}
               </div>
               {role === "sender" && roomLink && (
                 <div className="mt-3 flex gap-2">
-                  <input type="text" readOnly value={roomLink} className="flex-1 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-sm font-mono text-[var(--muted)] truncate" />
-                  <button type="button" onClick={() => copy(roomLink, "link")} className="h-10 px-3 rounded-lg border border-[var(--border-strong)] text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)] shrink-0 transition">
+                  <input type="text" readOnly value={roomLink} className="flex-1 h-10 px-3 rounded-lg border border-white/10 bg-white/5 text-sm font-mono text-white/70 truncate" />
+                  <button type="button" onClick={() => copy(roomLink, "link")} className="h-10 px-3 rounded-lg border border-white/15 text-sm font-medium text-white/80 hover:bg-white/5 shrink-0 transition">
                     {copyFeedback === "link" ? "Copied" : "Copy link"}
                   </button>
                 </div>
@@ -596,19 +580,19 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
             </div>
 
             {role === "sender" && pendingNames.length > 0 && (
-              <div className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--accent-soft)]/20 p-3">
-                <p className="text-xs font-medium text-[var(--muted)] mb-2">Ready to send</p>
+              <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <p className="text-xs font-medium text-white/40 mb-2">Ready to send</p>
                 <ul className="space-y-1">
                   {pendingNames.map((name) => (
-                    <li key={name} className="text-sm text-[var(--ink)] truncate">{name}</li>
+                    <li key={name} className="text-sm text-white/70 truncate">{name}</li>
                   ))}
                 </ul>
               </div>
             )}
 
             <div className="flex items-center justify-between gap-3 mb-4">
-              <p className="text-sm text-[var(--muted)]">{statusLine}</p>
-              <span className="text-xs font-medium tabular-nums text-[var(--muted)]">{peerCount}/2</span>
+              <p className="text-sm text-white/50">{statusLine}</p>
+              <span className="text-xs font-medium tabular-nums text-white/40">{peerCount}/2</span>
             </div>
 
             {role === "sender" && (
@@ -617,38 +601,38 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
               </button>
             )}
 
-            <button type="button" onClick={reset} className="w-full mt-3 h-10 rounded-xl text-sm text-[var(--muted)] hover:text-[var(--ink)] transition">
+            <button type="button" onClick={reset} className="w-full mt-3 h-10 rounded-xl text-sm text-white/40 hover:text-white/70 transition">
               Cancel
             </button>
           </motion.div>
         )}
 
-        {(state === "transfer" || state === "complete") && (
+        {!awaitingVerify && (state === "transfer" || state === "complete") && (
           <motion.div key="transfer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-5">
-              <span className="text-sm font-medium text-[var(--ink)]">
+              <span className="text-sm font-medium text-white">
                 {state === "complete" ? "Transfer complete" : "Transferring…"}
               </span>
-              <span className="text-xs text-[var(--muted)] tabular-nums">{speed}</span>
+              <span className="text-xs text-white/40 tabular-nums">{speed}</span>
             </div>
 
             <div className="mb-5">
-              <div className="h-2 rounded-full bg-[var(--border)] overflow-hidden">
+              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
                 <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 progress-fill" style={{ width: `${Math.round(overall * 100)}%` }} />
               </div>
-              <p className="text-xs text-[var(--muted)] mt-1.5 tabular-nums">{Math.round(overall * 100)}%</p>
+              <p className="text-xs text-white/40 mt-1.5 tabular-nums">{Math.round(overall * 100)}%</p>
             </div>
 
             <ul className="space-y-3 max-h-48 overflow-y-auto">
               {files.map((f) => (
                 <li key={f.name} className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[var(--ink)] truncate">{f.name}</p>
-                    <div className="h-1 mt-1 rounded-full bg-[var(--border)] overflow-hidden">
+                    <p className="text-sm text-white/80 truncate">{f.name}</p>
+                    <div className="h-1 mt-1 rounded-full bg-white/10 overflow-hidden">
                       <div className="h-full rounded-full bg-blue-400/80 progress-fill" style={{ width: `${Math.round(f.progress * 100)}%` }} />
                     </div>
                   </div>
-                  <span className="text-xs text-[var(--muted)] tabular-nums shrink-0">
+                  <span className="text-xs text-white/40 tabular-nums shrink-0">
                     {f.status === "done" ? "Done" : formatBytes(f.size)}
                   </span>
                 </li>
@@ -663,18 +647,27 @@ export function RoomPanel({ joinRequest, onJoinHandled }: RoomPanelProps) {
           </motion.div>
         )}
 
-        {state === "error" && (
+        {!awaitingVerify && state === "error" && (
           <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8 text-center">
             <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-500">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-400">
                 <path d="M12 8v5M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
               </svg>
             </div>
-            <h3 className="font-medium text-[var(--ink)] mb-1">{errorTitle}</h3>
-            <p className="text-sm text-[var(--muted)] mb-6">{errorDetail}</p>
+            <h3 className="font-medium text-white mb-1">{errorTitle}</h3>
+            <p className="text-sm text-white/50 mb-6">{errorDetail}</p>
             <button type="button" onClick={reset} className="h-11 px-6 rounded-xl btn-primary text-sm">
               Try again
+            </button>
+          </motion.div>
+        )}
+
+        {!awaitingVerify && state === "idle" && !joinRequest && (
+          <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 sm:p-8 text-center">
+            <p className="text-sm text-white/50">Select files or enter a code to begin.</p>
+            <button type="button" onClick={reset} className="mt-4 text-sm text-blue-400 hover:text-blue-300">
+              Back to home
             </button>
           </motion.div>
         )}

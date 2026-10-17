@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import SquishSwitch from "./SquishSwitch";
 
 export function ThemeToggle() {
   const [light, setLight] = useState(false);
@@ -12,31 +13,24 @@ export function ThemeToggle() {
     document.documentElement.classList.toggle("light", preferLight);
   }, []);
 
-  function toggle() {
-    const next = !light;
+  function handleChange(next: boolean) {
     setLight(next);
     document.documentElement.classList.toggle("light", next);
     localStorage.setItem("pigeon-theme", next ? "light" : "dark");
   }
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--accent-soft)] transition"
-      aria-label={light ? "Switch to dark mode" : "Switch to light mode"}
-      title={light ? "Dark mode" : "Light mode"}
-    >
-      {light ? (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      ) : (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-          <circle cx="12" cy="12" r="4" />
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" strokeLinecap="round" />
-        </svg>
-      )}
-    </button>
+    <SquishSwitch
+      checked={light}
+      onChange={handleChange}
+      ariaLabel={light ? "Switch to dark mode" : "Switch to light mode"}
+      width={52}
+      height={28}
+      radius={14}
+      trackColor="#27272a"
+      trackOnColor="#f5f5f5"
+      speed={55}
+      stretch={30}
+    />
   );
 }

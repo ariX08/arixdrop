@@ -12,12 +12,7 @@ function resolveDark(mode: Mode): boolean {
 }
 
 function applyTheme(mode: Mode) {
-  const dark = resolveDark(mode);
-  document.documentElement.classList.toggle("dark", dark);
-  document.documentElement.style.backgroundColor = dark ? "#1e1b4b" : "#ebe7ff";
-  if (document.body) {
-    document.body.style.backgroundColor = dark ? "#1e1b4b" : "#ebe7ff";
-  }
+  document.documentElement.classList.toggle("dark", resolveDark(mode));
 }
 
 function canPersistTheme(): boolean {
@@ -42,11 +37,7 @@ export function ThemeToggle() {
 
   useEffect(() => {
     let stored = readStoredMode();
-
-    if (readConsent() && !allowsCategory("preferences")) {
-      stored = "system";
-    }
-
+    if (readConsent() && !allowsCategory("preferences")) stored = "system";
     setMode(stored);
     applyTheme(stored);
     setMounted(true);
@@ -83,8 +74,7 @@ export function ThemeToggle() {
 
   function cycle() {
     const order: Mode[] = ["system", "light", "dark"];
-    const i = order.indexOf(mode);
-    const next = order[(i + 1) % order.length];
+    const next = order[(order.indexOf(mode) + 1) % order.length];
     setMode(next);
     applyTheme(next);
     if (canPersistTheme()) {
@@ -107,7 +97,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={cycle}
-      className="inline-flex items-center justify-center p-2 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--accent-soft)] border border-transparent hover:border-[var(--border)] transition-colors"
+      className="inline-flex items-center justify-center p-2 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--accent-soft)] border border-transparent hover:border-[var(--border)]"
       aria-label={label}
       title={label}
       suppressHydrationWarning
@@ -127,11 +117,7 @@ export function ThemeToggle() {
         </svg>
       ) : (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-          <path
-            d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )}
     </button>

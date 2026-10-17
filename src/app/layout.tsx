@@ -56,10 +56,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* FOUC: theme class + solid page bg before paint */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('pigeon-theme');if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;el.classList.toggle('dark',!!d);el.style.backgroundColor=d?'#1e1b4b':'#ebe7ff';}catch(e){document.documentElement.style.backgroundColor='#1e1b4b';}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('pigeon-theme');if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',!!d);}catch(e){}})();`,
           }}
         />
       </head>

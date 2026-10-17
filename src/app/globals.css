@@ -1,88 +1,123 @@
 @import "tailwindcss";
 
-/* Class-based dark (theme toggle) */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/*
-  --page-bg matches Dither base so there is never a transparent/brown flash
-  before the canvas mounts or between navigations.
-*/
+/* Stripe purple */
 :root {
-  color-scheme: light;
+  --stripe: #635bff;
+  --stripe-deep: #4f46e5;
+  --stripe-glow: #8b85ff;
 
-  --page-bg: #ebe7ff;
-  --bg: transparent;
-  --bg-soft: rgba(255, 255, 255, 0.72);
-  --surface: rgba(255, 255, 255, 0.92);
+  color-scheme: light;
+  --page-bg: #ffffff;
+  --bg: #ffffff;
+  --bg-soft: #f5f5f7;
+  --surface: #ffffff;
   --surface-elevated: #ffffff;
-  --border: rgba(15, 23, 42, 0.12);
-  --border-strong: rgba(15, 23, 42, 0.2);
-  --ink: #0f1220;
-  --ink-soft: #1e2433;
-  --muted: #4b5568;
-  --muted-soft: #6b7280;
-  --accent: #6d28d9;
-  --accent-hover: #5b21b6;
-  --accent-soft: rgba(109, 40, 217, 0.12);
+  --border: #e3e3e8;
+  --border-strong: #d2d2d7;
+  --ink: #1d1d1f;
+  --ink-soft: #333336;
+  --muted: #6e6e73;
+  --muted-soft: #8e8e93;
+  --accent: #635bff;
+  --accent-hover: #4f46e5;
+  --accent-soft: rgba(99, 91, 255, 0.12);
   --success: #0d9488;
   --error: #dc2626;
   --on-accent: #ffffff;
-  --header-bg: rgba(255, 255, 255, 0.72);
-  --header-border: rgba(15, 23, 42, 0.1);
-  --section-bg: rgba(255, 255, 255, 0.45);
-  --scrim: rgba(255, 255, 255, 0.25);
+  --header-bg: rgba(255, 255, 255, 0.82);
+  --header-border: #e3e3e8;
+  --section-bg: #f5f5f7;
+  --scrim: transparent;
 }
 
 html.dark {
   color-scheme: dark;
-
-  --page-bg: #1e1b4b;
-  --bg: transparent;
-  --bg-soft: rgba(18, 20, 28, 0.78);
-  --surface: rgba(18, 20, 28, 0.9);
-  --surface-elevated: rgba(24, 28, 42, 0.95);
-  --border: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.22);
-  --ink: #f8fafc;
-  --ink-soft: #e2e8f0;
-  --muted: #c4c9d4;
-  --muted-soft: #9aa3b2;
-  --accent: #a78bfa;
-  --accent-hover: #c4b5fd;
-  --accent-soft: rgba(167, 139, 250, 0.2);
+  --page-bg: #0a0a0c;
+  --bg: #0a0a0c;
+  --bg-soft: #121214;
+  --surface: #1c1c1e;
+  --surface-elevated: #2c2c2f;
+  --border: #2c2c2f;
+  --border-strong: #3a3a3f;
+  --ink: #f5f5f7;
+  --ink-soft: #e5e5ea;
+  --muted: #a1a1a6;
+  --muted-soft: #8e8e93;
+  --accent: #7a73ff;
+  --accent-hover: #635bff;
+  --accent-soft: rgba(99, 91, 255, 0.22);
   --success: #2dd4bf;
   --error: #f87171;
   --on-accent: #ffffff;
-  --header-bg: rgba(6, 6, 10, 0.6);
-  --header-border: rgba(255, 255, 255, 0.12);
-  --section-bg: rgba(0, 0, 0, 0.4);
-  --scrim: rgba(0, 0, 0, 0.45);
+  --header-bg: rgba(10, 10, 12, 0.85);
+  --header-border: #2c2c2f;
+  --section-bg: #121214;
+  --scrim: transparent;
 }
 
 html {
-  scroll-behavior: smooth;
   background-color: var(--page-bg);
 }
 
 body {
+  margin: 0;
   background-color: var(--page-bg);
   color: var(--ink);
   min-height: 100dvh;
 }
 
+/* Hero-style full-site field (North Star pattern, Stripe palette) */
+.site-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 50% 105%, var(--stripe-glow) 0%, rgba(99, 91, 255, 0) 55%),
+    linear-gradient(180deg, var(--stripe) 0%, var(--stripe-deep) 100%);
+}
+
+html:not(.dark) .site-bg {
+  /* Light mode: softer field so ink stays readable */
+  background:
+    radial-gradient(120% 80% at 50% 105%, #a5a0ff 0%, rgba(99, 91, 255, 0) 55%),
+    linear-gradient(180deg, #635bff 0%, #5147e0 100%);
+}
+
+.site-bg-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1.4px);
+  background-size: 7px 7px;
+  -webkit-mask-image: linear-gradient(180deg, transparent 10%, #000 85%);
+  mask-image: linear-gradient(180deg, transparent 10%, #000 85%);
+  opacity: 0.55;
+}
+
+/* Page chrome sits on the purple field — force light text on main marketing surface */
+.hero-on-field {
+  color: #ffffff;
+}
+
+.hero-on-field .hero-muted {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.hero-on-field .hero-soft {
+  color: rgba(255, 255, 255, 0.72);
+}
+
 .glass {
   background: var(--surface);
   border: 1px solid var(--border);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 12px 32px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 12px 32px rgba(15, 23, 42, 0.08);
   color: var(--ink);
 }
 
 html.dark .glass {
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.35),
-    0 12px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(0, 0, 0, 0.5);
 }
 
 :focus-visible {
@@ -97,51 +132,52 @@ input:focus:not(:focus-visible) {
 }
 
 .btn-primary {
-  background: var(--accent);
-  color: var(--on-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #1d1d1f;
   font-weight: 600;
-  transition: background 0.15s ease, transform 0.15s ease;
+  border: 0;
+  border-radius: 12px;
+  padding: 0.75rem 1.35rem;
+  cursor: pointer;
 }
+
 .btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover);
+  background: #f5f5f7;
 }
-.btn-primary:active:not(:disabled) {
-  transform: translateY(1px);
-}
+
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .btn-ghost {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
   font-weight: 500;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 12px;
+  padding: 0.75rem 1.35rem;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
 }
+
 .btn-ghost:hover:not(:disabled) {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .progress-fill {
-  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: none;
 }
 
 .room-code {
   letter-spacing: 0.18em;
   font-variant-numeric: tabular-nums;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
 }
 
 ::-webkit-scrollbar {

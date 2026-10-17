@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -25,13 +24,13 @@ export function Header() {
         </a>
 
         <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-[var(--muted)]" aria-label="Primary">
-          <a href="/#how" className="hover:text-[var(--ink)] transition-colors">
+          <a href="/#how" className="hover:text-[var(--ink)]">
             How it works
           </a>
-          <a href="/privacy" className="hover:text-[var(--ink)] transition-colors">
+          <a href="/privacy" className="hover:text-[var(--ink)]">
             Privacy
           </a>
-          <a href="/security" className="hover:text-[var(--ink)] transition-colors">
+          <a href="/security" className="hover:text-[var(--ink)]">
             Security
           </a>
           <ThemeToggle />
@@ -57,38 +56,32 @@ export function Header() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="sm:hidden overflow-hidden border-t"
-            style={{
-              borderColor: "var(--header-border)",
-              backgroundColor: "var(--surface)",
-            }}
-          >
-            <nav className="flex flex-col px-4 py-3 text-sm font-medium">
-              {[
-                { label: "How it works", href: "/#how" },
-                { label: "Privacy", href: "/privacy" },
-                { label: "Security", href: "/security" },
-              ].map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="py-2.5 text-[var(--muted)] hover:text-[var(--ink)]"
-                  onClick={() => setOpen(false)}
-                >
-                  {item.label}
-                </a>
-              ))}
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {open && (
+        <div
+          className="sm:hidden border-t"
+          style={{
+            borderColor: "var(--header-border)",
+            backgroundColor: "var(--surface)",
+          }}
+        >
+          <nav className="flex flex-col px-4 py-3 text-sm font-medium">
+            {[
+              { label: "How it works", href: "/#how" },
+              { label: "Privacy", href: "/privacy" },
+              { label: "Security", href: "/security" },
+            ].map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                className="py-2.5 text-[var(--muted)] hover:text-[var(--ink)]"
+                onClick={() => setOpen(false)}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

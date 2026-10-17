@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RoomPanel } from "@/components/RoomPanel";
 import { JoinModal } from "@/components/JoinModal";
+import SpecularButton from "@/components/SpecularButton";
 import { motion, AnimatePresence } from "motion/react";
 
 function HomeContent() {
@@ -78,21 +79,34 @@ function HomeContent() {
                 </p>
 
                 <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <button
-                    type="button"
+                  <SpecularButton
+                    size="md"
+                    radius={12}
+                    tint="#635bff"
+                    tintOpacity={0.98}
+                    textColor="#ffffff"
+                    lineColor="#c4b5fd"
+                    baseColor="#4c1d95"
+                    intensity={1.1}
+                    idleIntensity={0.4}
                     onClick={onHeroSend}
-                    className="btn-primary inline-flex items-center justify-center gap-2 h-12 px-7 rounded-lg text-[15px] w-full sm:w-auto"
                   >
-                    Send files
-                    <span aria-hidden>→</span>
-                  </button>
-                  <button
-                    type="button"
+                    Send files →
+                  </SpecularButton>
+                  <SpecularButton
+                    size="md"
+                    radius={12}
+                    tint="#ffffff"
+                    tintOpacity={0.12}
+                    textColor="var(--ink)"
+                    lineColor="#a1a1aa"
+                    baseColor="#71717a"
+                    intensity={0.85}
+                    idleIntensity={0.3}
                     onClick={() => setJoinOpen(true)}
-                    className="btn-ghost inline-flex items-center justify-center h-12 px-7 rounded-lg text-[15px] w-full sm:w-auto"
                   >
                     Enter code
-                  </button>
+                  </SpecularButton>
                 </div>
 
                 <p className="mt-8 text-sm text-[var(--muted)]">
@@ -119,7 +133,7 @@ function HomeContent() {
           </AnimatePresence>
         </section>
 
-        <section id="how" className="border-t border-[var(--border)] bg-[var(--bg)]/60">
+        <section id="how" className="border-t border-[var(--border)] bg-[var(--bg)]/70">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
             <h2 className="font-[family-name:var(--font-instrument)] font-semibold text-2xl text-[var(--ink)] text-center mb-12">
               How it works

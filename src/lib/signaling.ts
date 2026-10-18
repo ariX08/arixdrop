@@ -21,6 +21,7 @@ function baseWsUrl(): string {
 export class SignalingClient {
   private ws: WebSocket | null = null;
   private listeners = new Set<(ev: SignalingEvent) => void>();
+  private roomCode: string | null = null;
 
   on(fn: (ev: SignalingEvent) => void) {
     this.listeners.add(fn);
@@ -31,15 +32,22 @@ export class SignalingClient {
     this.listeners.forEach((fn) => fn(ev));
   }
 
-  /** Connect already scoped to a room (required for Durable Object routing). */
+  /** Connect already scoped to a room (required for Durable Object / worker routing). */
   connect(room: string): Promise<void> {
     const code = room.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
     if (code.length !== 6) {
       return Promise.reject(new Error("Invalid room code"));
     }
+    this.roomCode = code;
 
     return new Promise((resolve, reject) => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        // Re-announce join for the same socket
+        try {
+          this.send({ type: "join", room: code });
+        } catch {
+          /* ignore */
+        }
         resolve();
         return;
       }
@@ -51,11 +59,17 @@ export class SignalingClient {
       const timeout = setTimeout(() => {
         socket.close();
         reject(new Error("Signaling server timed out. Is NEXT_PUBLIC_SIGNALING_URL set?"));
-      }, 12000);
+      }, 15000);
 
       socket.onopen = () => {
         clearTimeout(timeout);
         this.emit({ type: "open" });
+        // Backup join message for workers that only listen on "join"
+        try {
+          socket.send(JSON.stringify({ type: "join", room: code }));
+        } catch {
+          /* ignore */
+        }
         resolve();
       };
 
@@ -93,9 +107,10 @@ export class SignalingClient {
     this.ws.send(JSON.stringify(msg));
   }
 
-  /** Room is already selected via connect(room); kept for API compatibility. */
-  join(_room: string) {
-    // no-op: Durable Object join happens on WebSocket open with ?room=
+  /** Explicit join (also sent automatically on connect). */
+  join(room?: string) {
+    const code = (room || this.roomCode || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    if (code.length === 6) this.send({ type: "join", room: code });
   }
 
   sendOffer(payload: RTCSessionDescriptionInit) {
@@ -113,5 +128,6 @@ export class SignalingClient {
   close() {
     this.ws?.close();
     this.ws = null;
+    this.roomCode = null;
   }
 }

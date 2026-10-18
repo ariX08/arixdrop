@@ -1,18 +1,40 @@
 /**
- * Minimal WebRTC DataChannel helper for AriXDrop.
- * Real transfers use chunked binary messages over a single ordered reliable channel.
+ * WebRTC DataChannel helpers for pigeon.
+ * STUN + public TURN so peers on different networks can connect through NAT.
  */
 
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" },
+  // Free community TURN (Open Relay / Metered) — required for many cellular / strict NATs
+  {
+    urls: [
+      "turn:openrelay.metered.ca:80",
+      "turn:openrelay.metered.ca:443",
+      "turn:openrelay.metered.ca:443?transport=tcp",
+    ],
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+  {
+    urls: [
+      "turn:openrelay.metered.ca:80?transport=tcp",
+      "turns:openrelay.metered.ca:443",
+    ],
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
 ];
 
 export function createPeerConnection(
   onIceCandidate: (c: RTCIceCandidate) => void,
   onConnectionState?: (state: RTCPeerConnectionState) => void
 ): RTCPeerConnection {
-  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  const pc = new RTCPeerConnection({
+    iceServers: ICE_SERVERS,
+    iceCandidatePoolSize: 10,
+  });
 
   pc.onicecandidate = (ev) => {
     if (ev.candidate) onIceCandidate(ev.candidate);
@@ -22,17 +44,31 @@ export function createPeerConnection(
     onConnectionState?.(pc.connectionState);
   };
 
+  pc.oniceconnectionstatechange = () => {
+    // Bubble failed ICE as connection failure when overall state lags
+    if (pc.iceConnectionState === "failed") {
+      onConnectionState?.("failed");
+    }
+  };
+
   return pc;
 }
 
 export function createDataChannel(
   pc: RTCPeerConnection,
-  label = "arixdrop"
+  label = "pigeon"
 ): RTCDataChannel {
   const channel = pc.createDataChannel(label, {
     ordered: true,
   });
   channel.binaryType = "arraybuffer";
+  // Raise buffer watermark so large sends don't stall as easily
+  try {
+    // @ts-expect-error — not in all TS libs
+    channel.bufferedAmountLowThreshold = 256 * 1024;
+  } catch {
+    /* ignore */
+  }
   return channel;
 }
 
@@ -49,7 +85,8 @@ export function generateRoomCode(): string {
 export function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 /** Chunk size for DataChannel sends (keeps UI responsive and respects buffer). */

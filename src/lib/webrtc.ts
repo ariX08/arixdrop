@@ -60,13 +60,8 @@ export function createDataChannel(
     ordered: true,
   });
   channel.binaryType = "arraybuffer";
-  try {
-    // Fire when buffer drains so we can resume without busy-polling
-    // @ts-expect-error — not in all TS DOM libs
-    channel.bufferedAmountLowThreshold = 512 * 1024;
-  } catch {
-    /* ignore */
-  }
+  // Resume sends when outbound buffer drains
+  channel.bufferedAmountLowThreshold = 512 * 1024;
   return channel;
 }
 

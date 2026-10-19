@@ -134,7 +134,9 @@ export function useRoomSession({
         try { signalingRef.current?.sendIce(candidate.toJSON()); } catch { /* */ }
       },
       (s) => {
-        if (s === "connected" || s === "completed") {
+        // RTCPeerConnectionState: new | connecting | connected | disconnected | failed | closed
+        // ("completed" is only on RTCIceConnectionState)
+        if (s === "connected") {
           setStatusLine(
             roleRef.current === "sender"
               ? "Connected — press Send files when ready"

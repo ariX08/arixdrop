@@ -1,6 +1,6 @@
 # AriXDrop
 
-Fast peer-to-peer file transfer. No upload, no account, no permanent storage.
+Fast peer-to-peer file transfer. No upload, no account, no permanent storage..
 
 Files move directly between devices over an encrypted WebRTC DataChannel. A lightweight Cloudflare Worker handles only the signaling needed to establish the connection.
 

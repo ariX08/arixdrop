@@ -142,16 +142,16 @@ export function useRoomSession({
     reofferRef.current = setTimeout(() => {
       if (channelRef.current?.readyState === "open") return;
       if (roleRef.current !== "sender") return;
-      if (restartAttempts.current >= 4) {
+      if (restartAttempts.current >= 3) {
         setStatusLine("Could not connect. Cancel and create a new room.");
         return;
       }
       restartAttempts.current += 1;
-      setStatusLine(`Still connecting — retry ${restartAttempts.current}/4…`);
+      setStatusLine(`Retrying connection (${restartAttempts.current}/3)…`);
       offerSent.current = false;
       makingOffer.current = false;
       void startOffer(true);
-    }, 6000);
+    }, 2500);
   }
 
   function setupPeerConnection() {
@@ -166,12 +166,7 @@ export function useRoomSession({
       },
       (s) => {
         if (s === "connected") {
-          // Data channel onopen is the real "ready" signal
-          setStatusLine(
-            roleRef.current === "sender"
-              ? "Connected — opening data channel…"
-              : "Connected — opening data channel…"
-          );
+          setStatusLine("Connected — opening data channel…");
         } else if (s === "failed") {
           setChannelReady(false);
           setStatusLine("Connection failed — retrying…");
@@ -358,21 +353,14 @@ export function useRoomSession({
       try {
         const pc = setupPeerConnection();
         const desc = ev.payload as RTCSessionDescriptionInit;
-        // Ignore glare / re-offers when already stable
-        if (pc.signalingState === "stable" && pc.currentRemoteDescription) {
-          await pc.setRemoteDescription(desc);
-        } else if (pc.signalingState === "have-local-offer") {
-          // Rare glare — ignore
-          return;
-        } else {
-          await pc.setRemoteDescription(desc);
-        }
+        if (pc.signalingState === "have-local-offer") return;
+        await pc.setRemoteDescription(desc);
         remoteReady.current = true;
         await flushPendingIce(pc);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         signalingRef.current?.sendAnswer(answer);
-        setStatusLine("Answer sent — finishing connection…");
+        setStatusLine("Finishing connection…");
       } catch (e) {
         setStatusLine(e instanceof Error ? e.message : "Failed to accept connection");
       }
@@ -385,7 +373,7 @@ export function useRoomSession({
           await pc.setRemoteDescription(ev.payload as RTCSessionDescriptionInit);
           remoteReady.current = true;
           await flushPendingIce(pc);
-          setStatusLine("Got answer — finishing connection…");
+          setStatusLine("Finishing connection…");
         }
       } catch {
         /* ignore duplicate */
@@ -453,6 +441,7 @@ export function useRoomSession({
           setState("waiting");
           startTTL(15 * 60);
           onJoinHandled?.();
+          try { setupPeerConnection(); } catch { /* */ }
         }
       } catch (e) {
         if (!cancelled) {
@@ -507,6 +496,14 @@ export function useRoomSession({
       setState("waiting");
       setStatusLine("Waiting for the other device to join…");
       startTTL(15 * 60);
+      try {
+        const pc = setupPeerConnection();
+        if (!channelRef.current) {
+          const ch = createDataChannel(pc);
+          channelRef.current = ch;
+          wireChannel(ch, "sender");
+        }
+      } catch { /* */ }
     } catch (e) {
       setState("waiting");
       setStatusLine(e instanceof Error ? e.message : "Signaling offline");

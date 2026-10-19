@@ -1,18 +1,15 @@
 /**
- * WebRTC helpers for pigeon.
+ * WebRTC helpers for pigeon — tuned for fast connect.
  */
 
+// Keep ICE server list short: each TURN URL adds gathering delay.
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-  { urls: "stun:stun2.l.google.com:19302" },
   { urls: "stun:stun.cloudflare.com:3478" },
   {
     urls: [
       "turn:openrelay.metered.ca:80",
-      "turn:openrelay.metered.ca:443",
       "turn:openrelay.metered.ca:443?transport=tcp",
-      "turns:openrelay.metered.ca:443",
     ],
     username: "openrelayproject",
     credential: "openrelayproject",
@@ -25,8 +22,11 @@ export function createPeerConnection(
 ): RTCPeerConnection {
   const pc = new RTCPeerConnection({
     iceServers: ICE_SERVERS,
-    iceCandidatePoolSize: 10,
+    // 0 = don't pre-gather; trickle ICE as candidates appear (faster first connect)
+    iceCandidatePoolSize: 0,
     iceTransportPolicy: "all",
+    bundlePolicy: "max-bundle",
+    rtcpMuxPolicy: "require",
   });
 
   pc.onicecandidate = (ev) => {

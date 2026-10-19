@@ -7,7 +7,6 @@ const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
   { urls: "stun:stun2.l.google.com:19302" },
-  // Free community TURN (Open Relay / Metered) — required for many cellular / strict NATs
   {
     urls: [
       "turn:openrelay.metered.ca:80",
@@ -45,7 +44,6 @@ export function createPeerConnection(
   };
 
   pc.oniceconnectionstatechange = () => {
-    // Bubble failed ICE as connection failure when overall state lags
     if (pc.iceConnectionState === "failed") {
       onConnectionState?.("failed");
     }
@@ -62,10 +60,10 @@ export function createDataChannel(
     ordered: true,
   });
   channel.binaryType = "arraybuffer";
-  // Raise buffer watermark so large sends don't stall as easily
   try {
-    // @ts-expect-error — not in all TS libs
-    channel.bufferedAmountLowThreshold = 256 * 1024;
+    // Fire when buffer drains so we can resume without busy-polling
+    // @ts-expect-error — not in all TS DOM libs
+    channel.bufferedAmountLowThreshold = 512 * 1024;
   } catch {
     /* ignore */
   }
@@ -89,5 +87,8 @@ export function formatBytes(n: number): string {
   return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
-/** Chunk size for DataChannel sends (keeps UI responsive and respects buffer). */
-export const CHUNK_SIZE = 64 * 1024; // 64 KB
+/** Larger chunks = fewer messages & higher throughput on DataChannel. */
+export const CHUNK_SIZE = 256 * 1024; // 256 KB
+
+/** High-water mark before we pause sending (bytes in outbound buffer). */
+export const BUFFER_HIGH = 8 * 1024 * 1024; // 8 MB

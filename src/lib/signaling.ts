@@ -32,7 +32,6 @@ export class SignalingClient {
     this.listeners.forEach((fn) => fn(ev));
   }
 
-  /** Connect already scoped to a room (required for Durable Object / worker routing). */
   connect(room: string): Promise<void> {
     const code = room.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
     if (code.length !== 6) {
@@ -42,12 +41,6 @@ export class SignalingClient {
 
     return new Promise((resolve, reject) => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        // Re-announce join for the same socket
-        try {
-          this.send({ type: "join", room: code });
-        } catch {
-          /* ignore */
-        }
         resolve();
         return;
       }
@@ -58,30 +51,19 @@ export class SignalingClient {
 
       const timeout = setTimeout(() => {
         socket.close();
-        reject(new Error("Signaling server timed out. Is NEXT_PUBLIC_SIGNALING_URL set?"));
+        reject(new Error("Signaling timed out. Check NEXT_PUBLIC_SIGNALING_URL."));
       }, 15000);
 
       socket.onopen = () => {
         clearTimeout(timeout);
         this.emit({ type: "open" });
-        // Backup join message for workers that only listen on "join"
-        try {
-          socket.send(JSON.stringify({ type: "join", room: code }));
-        } catch {
-          /* ignore */
-        }
         resolve();
       };
 
       socket.onerror = () => {
         clearTimeout(timeout);
-        this.emit({
-          type: "socket-error",
-          message: "Could not reach signaling server",
-        });
-        reject(
-          new Error("Could not reach signaling server. Check NEXT_PUBLIC_SIGNALING_URL.")
-        );
+        this.emit({ type: "socket-error", message: "Could not reach signaling server" });
+        reject(new Error("Could not reach signaling server."));
       };
 
       socket.onclose = () => {
@@ -91,10 +73,9 @@ export class SignalingClient {
 
       socket.onmessage = (event) => {
         try {
-          const data = JSON.parse(String(event.data));
-          this.emit(data as SignalingEvent);
+          this.emit(JSON.parse(String(event.data)) as SignalingEvent);
         } catch {
-          // ignore
+          /* ignore */
         }
       };
     });
@@ -105,12 +86,6 @@ export class SignalingClient {
       throw new Error("Not connected to signaling server");
     }
     this.ws.send(JSON.stringify(msg));
-  }
-
-  /** Explicit join (also sent automatically on connect). */
-  join(room?: string) {
-    const code = (room || this.roomCode || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
-    if (code.length === 6) this.send({ type: "join", room: code });
   }
 
   sendOffer(payload: RTCSessionDescriptionInit) {

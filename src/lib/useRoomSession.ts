@@ -49,6 +49,7 @@ export function useRoomSession({
 
   const selectedFilesRef = useRef<File[]>(initialFiles ?? []);
   const ttlRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reofferRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const signalingRef = useRef<SignalingClient | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const channelRef = useRef<RTCDataChannel | null>(null);
@@ -59,6 +60,7 @@ export function useRoomSession({
   const remoteReady = useRef(false);
   const lastJoinNonce = useRef(0);
   const startedFromFiles = useRef(false);
+  const restartAttempts = useRef(0);
 
   useEffect(() => {
     if (initialFiles?.length && !startedFromFiles.current) {
@@ -74,9 +76,13 @@ export function useRoomSession({
   const clearTimers = useCallback(() => {
     if (ttlRef.current) clearInterval(ttlRef.current);
     ttlRef.current = null;
+    if (reofferRef.current) clearTimeout(reofferRef.current);
+    reofferRef.current = null;
   }, []);
 
   const teardownRtc = useCallback(() => {
+    if (reofferRef.current) clearTimeout(reofferRef.current);
+    reofferRef.current = null;
     try { channelRef.current?.close(); } catch { /* */ }
     try { pcRef.current?.close(); } catch { /* */ }
     channelRef.current = null;
@@ -85,6 +91,7 @@ export function useRoomSession({
     remoteReady.current = false;
     offerSent.current = false;
     makingOffer.current = false;
+    restartAttempts.current = 0;
     setChannelReady(false);
   }, []);
 
@@ -103,7 +110,7 @@ export function useRoomSession({
   );
 
   function startTTL(seconds: number) {
-    clearTimers();
+    if (ttlRef.current) clearInterval(ttlRef.current);
     let remaining = seconds;
     setTtl(remaining);
     ttlRef.current = setInterval(() => {
@@ -123,37 +130,56 @@ export function useRoomSession({
   async function flushPendingIce(pc: RTCPeerConnection) {
     const queued = pendingIce.current.splice(0);
     for (const c of queued) {
-      try { await pc.addIceCandidate(c); } catch { /* */ }
+      try {
+        if (c.candidate === "") await pc.addIceCandidate(null);
+        else await pc.addIceCandidate(c);
+      } catch { /* */ }
     }
+  }
+
+  function scheduleReoffer() {
+    if (reofferRef.current) clearTimeout(reofferRef.current);
+    reofferRef.current = setTimeout(() => {
+      if (channelRef.current?.readyState === "open") return;
+      if (roleRef.current !== "sender") return;
+      if (restartAttempts.current >= 4) {
+        setStatusLine("Could not connect. Cancel and create a new room.");
+        return;
+      }
+      restartAttempts.current += 1;
+      setStatusLine(`Still connecting — retry ${restartAttempts.current}/4…`);
+      offerSent.current = false;
+      makingOffer.current = false;
+      void startOffer(true);
+    }, 6000);
   }
 
   function setupPeerConnection() {
     if (pcRef.current) return pcRef.current;
     const pc = createPeerConnection(
       (candidate) => {
-        try { signalingRef.current?.sendIce(candidate.toJSON()); } catch { /* */ }
+        try {
+          signalingRef.current?.sendIce(
+            candidate ? candidate.toJSON() : { candidate: "" }
+          );
+        } catch { /* */ }
       },
       (s) => {
-        // RTCPeerConnectionState: new | connecting | connected | disconnected | failed | closed
-        // ("completed" is only on RTCIceConnectionState)
         if (s === "connected") {
+          // Data channel onopen is the real "ready" signal
           setStatusLine(
             roleRef.current === "sender"
-              ? "Connected — press Send files when ready"
-              : "Connected — waiting for files…"
+              ? "Connected — opening data channel…"
+              : "Connected — opening data channel…"
           );
         } else if (s === "failed") {
+          setChannelReady(false);
           setStatusLine("Connection failed — retrying…");
-          void (async () => {
-            try {
-              if (!pcRef.current || roleRef.current !== "sender" || !offerSent.current) return;
-              const offer = await pcRef.current.createOffer({ iceRestart: true });
-              await pcRef.current.setLocalDescription(offer);
-              signalingRef.current?.sendOffer(offer);
-            } catch {
-              setStatusLine("Could not reconnect. Cancel and try again.");
-            }
-          })();
+          if (roleRef.current === "sender") {
+            offerSent.current = false;
+            makingOffer.current = false;
+            void startOffer(true);
+          }
         } else if (s === "disconnected") {
           setStatusLine("Connection interrupted — waiting…");
         }
@@ -171,6 +197,9 @@ export function useRoomSession({
 
   function wireChannel(ch: RTCDataChannel, who: "sender" | "receiver") {
     ch.onopen = () => {
+      if (reofferRef.current) clearTimeout(reofferRef.current);
+      reofferRef.current = null;
+      restartAttempts.current = 0;
       setChannelReady(true);
       setStatusLine(
         who === "sender"
@@ -179,12 +208,15 @@ export function useRoomSession({
       );
     };
     ch.onclose = () => setChannelReady(false);
+    ch.onerror = () => {
+      setStatusLine("Data channel error");
+    };
     if (who !== "receiver") return;
 
     let receiveMeta: { name: string; size: number }[] = [];
     let current = 0;
     let received = 0;
-    let chunks: ArrayBuffer[] = [];
+    let chunks: BlobPart[] = [];
     let lastUi = 0;
     let recvT0 = 0;
 
@@ -210,14 +242,18 @@ export function useRoomSession({
             );
             setOverall(0);
           } else if (msg.type === "file-done") {
-            const blob = new Blob(chunks);
+            const name = receiveMeta[current]?.name || "file";
+            const blob = new Blob(chunks, { type: "application/octet-stream" });
+            chunks = [];
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = receiveMeta[current]?.name || "file";
+            a.download = name;
+            a.rel = "noopener";
+            document.body.appendChild(a);
             a.click();
-            URL.revokeObjectURL(url);
-            chunks = [];
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 60_000);
             received = 0;
             setFiles((prev) =>
               prev.map((f, i) => (i === current ? { ...f, progress: 1, status: "done" } : f))
@@ -231,16 +267,17 @@ export function useRoomSession({
         } catch { /* */ }
         return;
       }
-      const buf = ev.data as ArrayBuffer;
-      chunks.push(buf);
-      received += buf.byteLength;
+
+      const raw = ev.data as ArrayBuffer;
+      chunks.push(raw);
+      received += raw.byteLength;
       const total = receiveMeta[current]?.size || 1;
       const p = Math.min(1, received / total);
       const doneSizes = receiveMeta.slice(0, current).reduce((a, f) => a + f.size, 0);
       const all = receiveMeta.reduce((a, f) => a + f.size, 0) || 1;
       const overallP = (doneSizes + received) / all;
       const now = performance.now();
-      if (now - lastUi > 100 || p >= 1) {
+      if (now - lastUi > 150 || p >= 1) {
         lastUi = now;
         setFiles((prev) =>
           prev.map((f, i) => (i === current ? { ...f, progress: p, status: "transferring" } : f))
@@ -249,30 +286,36 @@ export function useRoomSession({
         if (recvT0) {
           const elapsed = (now - recvT0) / 1000;
           if (elapsed > 0.25) {
-            const bytes = doneSizes + received;
-            setSpeed(`${(bytes / (1024 * 1024) / elapsed).toFixed(1)} MB/s`);
+            setSpeed(`${((doneSizes + received) / (1024 * 1024) / elapsed).toFixed(1)} MB/s`);
           }
         }
       }
     };
   }
 
-  async function startOffer() {
-    if (roleRef.current !== "sender" || makingOffer.current || offerSent.current) return;
+  async function startOffer(iceRestart = false) {
+    if (roleRef.current !== "sender") return;
+    if (makingOffer.current) return;
+    if (offerSent.current && !iceRestart) return;
+    if (channelRef.current?.readyState === "open") return;
+
     makingOffer.current = true;
     try {
       const pc = setupPeerConnection();
-      if (!channelRef.current) {
+      if (!channelRef.current || channelRef.current.readyState === "closed") {
         const ch = createDataChannel(pc);
         channelRef.current = ch;
         wireChannel(ch, "sender");
       }
-      const offer = await pc.createOffer();
+      const offer = await pc.createOffer(iceRestart ? { iceRestart: true } : undefined);
       await pc.setLocalDescription(offer);
       signalingRef.current?.sendOffer(offer);
       offerSent.current = true;
+      setStatusLine("Negotiating connection…");
+      scheduleReoffer();
     } catch (e) {
       setStatusLine(e instanceof Error ? e.message : "Could not start connection");
+      offerSent.current = false;
     } finally {
       makingOffer.current = false;
     }
@@ -284,10 +327,10 @@ export function useRoomSession({
       if (ev.peers >= 2) {
         setStatusLine(
           roleRef.current === "sender"
-            ? "Both devices connected — you can send"
-            : "Both devices connected — waiting for files"
+            ? "Both devices in room — connecting…"
+            : "Both devices in room — waiting for connection…"
         );
-        if (roleRef.current === "sender") void startOffer();
+        if (roleRef.current === "sender") void startOffer(false);
       } else {
         setStatusLine(
           roleRef.current === "sender"
@@ -300,38 +343,64 @@ export function useRoomSession({
       setPeerCount(2);
       setStatusLine(
         roleRef.current === "sender"
-          ? "Other device joined — preparing connection…"
-          : "Sender is here — preparing connection…"
+          ? "Other device joined — connecting…"
+          : "Sender is here — waiting for connection…"
       );
-      if (roleRef.current === "sender") void startOffer();
+      if (roleRef.current === "sender") void startOffer(false);
     }
     if (ev.type === "peer-left") {
-      setPeerCount((n) => Math.max(1, n - 1));
+      setPeerCount((n) => Math.max(0, n - 1));
       setChannelReady(false);
+      offerSent.current = false;
       setStatusLine("Other device left");
     }
     if (ev.type === "offer" && roleRef.current === "receiver" && ev.payload) {
-      const pc = setupPeerConnection();
-      await pc.setRemoteDescription(ev.payload as RTCSessionDescriptionInit);
-      remoteReady.current = true;
-      await flushPendingIce(pc);
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      signalingRef.current?.sendAnswer(answer);
+      try {
+        const pc = setupPeerConnection();
+        const desc = ev.payload as RTCSessionDescriptionInit;
+        // Ignore glare / re-offers when already stable
+        if (pc.signalingState === "stable" && pc.currentRemoteDescription) {
+          await pc.setRemoteDescription(desc);
+        } else if (pc.signalingState === "have-local-offer") {
+          // Rare glare — ignore
+          return;
+        } else {
+          await pc.setRemoteDescription(desc);
+        }
+        remoteReady.current = true;
+        await flushPendingIce(pc);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        signalingRef.current?.sendAnswer(answer);
+        setStatusLine("Answer sent — finishing connection…");
+      } catch (e) {
+        setStatusLine(e instanceof Error ? e.message : "Failed to accept connection");
+      }
     }
     if (ev.type === "answer" && roleRef.current === "sender" && ev.payload) {
-      if (pcRef.current) {
-        await pcRef.current.setRemoteDescription(ev.payload as RTCSessionDescriptionInit);
-        remoteReady.current = true;
-        await flushPendingIce(pcRef.current);
+      try {
+        const pc = pcRef.current;
+        if (!pc) return;
+        if (pc.signalingState === "have-local-offer") {
+          await pc.setRemoteDescription(ev.payload as RTCSessionDescriptionInit);
+          remoteReady.current = true;
+          await flushPendingIce(pc);
+          setStatusLine("Got answer — finishing connection…");
+        }
+      } catch {
+        /* ignore duplicate */
       }
     }
     if (ev.type === "ice" && ev.payload) {
       const init = ev.payload as RTCIceCandidateInit;
       const pc = pcRef.current;
-      if (!pc || !remoteReady.current) pendingIce.current.push(init);
-      else {
-        try { await pc.addIceCandidate(init); } catch { /* */ }
+      if (!pc || !remoteReady.current) {
+        pendingIce.current.push(init);
+      } else {
+        try {
+          if (init.candidate === "") await pc.addIceCandidate(null);
+          else await pc.addIceCandidate(init);
+        } catch { /* */ }
       }
     }
     if (ev.type === "error") {
@@ -445,32 +514,11 @@ export function useRoomSession({
     }
   }
 
-  function waitForBuffer(ch: RTCDataChannel): Promise<void> {
-    if (ch.bufferedAmount <= BUFFER_HIGH) return Promise.resolve();
-    return new Promise((resolve) => {
-      let settled = false;
-      const done = () => {
-        if (settled) return;
-        settled = true;
-        ch.removeEventListener("bufferedamountlow", onLow);
-        clearInterval(poll);
-        resolve();
-      };
-      const onLow = () => {
-        if (ch.bufferedAmount <= BUFFER_HIGH / 2) done();
-      };
-      ch.addEventListener("bufferedamountlow", onLow);
-      const poll = setInterval(() => {
-        if (ch.bufferedAmount <= BUFFER_HIGH / 2) done();
-      }, 40);
-    });
-  }
-
   async function sendFilesNow() {
     const ch = channelRef.current;
     const selected = selectedFilesRef.current;
     if (!ch || ch.readyState !== "open" || !selected.length) {
-      setStatusLine("Wait until both devices are connected (2/2), then try again.");
+      setStatusLine("Wait until both devices are connected, then try again.");
       return;
     }
     setSending(true);
@@ -486,17 +534,30 @@ export function useRoomSession({
       let offset = 0;
       setFiles((prev) => prev.map((f, i) => (i === fi ? { ...f, status: "transferring" } : f)));
       while (offset < file.size) {
-        await waitForBuffer(ch);
+        while (ch.bufferedAmount > BUFFER_HIGH) {
+          await new Promise<void>((resolve) => {
+            const done = () => {
+              ch.removeEventListener("bufferedamountlow", done);
+              resolve();
+            };
+            ch.addEventListener("bufferedamountlow", done);
+            setTimeout(() => {
+              if (ch.bufferedAmount <= BUFFER_HIGH / 2) {
+                ch.removeEventListener("bufferedamountlow", done);
+                resolve();
+              }
+            }, 50);
+          });
+        }
         const slice = file.slice(offset, offset + CHUNK_SIZE);
         const buf = await slice.arrayBuffer();
         ch.send(buf);
         offset += buf.byteLength;
         sentTotal += buf.byteLength;
         const now = performance.now();
-        if (now - lastUi > 100 || offset >= file.size) {
+        if (now - lastUi > 150 || offset >= file.size) {
           lastUi = now;
-          const p = offset / file.size;
-          setFiles((prev) => prev.map((f, i) => (i === fi ? { ...f, progress: p } : f)));
+          setFiles((prev) => prev.map((f, i) => (i === fi ? { ...f, progress: offset / file.size } : f)));
           setOverall(sentTotal / totalSize);
           const elapsed = (now - t0) / 1000;
           if (elapsed > 0.25) {
@@ -550,7 +611,8 @@ export function useRoomSession({
     return `${m}:${sec.toString().padStart(2, "0")}`;
   }
 
-  const canSend = role === "sender" && peerCount >= 2 && channelReady && !sending && state === "waiting";
+  const canSend =
+    role === "sender" && peerCount >= 2 && channelReady && !sending && state === "waiting";
   const canCreate = !siteKey || !!turnstileToken;
 
   return {

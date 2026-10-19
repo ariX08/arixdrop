@@ -24,6 +24,10 @@ export function RoomPanel({ joinRequest, initialFiles, onJoinHandled, onReset }:
     siteKey: SITE_KEY,
   });
 
+  const activeFile = s.files.find((f) => f.status === "transferring") || s.files[s.files.length - 1];
+  const totalBytes = s.files.reduce((a, f) => a + f.size, 0);
+  const transferred = Math.round(s.overall * totalBytes);
+
   return (
     <div className="glass rounded-2xl overflow-hidden" role="region" aria-label="Transfer room">
       <AnimatePresence mode="wait">
@@ -109,26 +113,38 @@ export function RoomPanel({ joinRequest, initialFiles, onJoinHandled, onReset }:
 
         {!s.awaitingVerify && s.state === "transfer" && (
           <motion.div key="transfer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 sm:p-8">
-            <div className="flex items-center justify-between mb-5">
-              <span className="text-sm font-medium text-[var(--ink)]">{s.role === "receiver" ? "Receiving…" : "Sending…"}</span>
-              <span className="text-xs text-[var(--muted)] tabular-nums">{s.speed}</span>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <span className="text-sm font-medium text-[var(--ink)]">
+                {s.role === "receiver" ? "Receiving" : "Sending"}
+              </span>
+              <span className="text-xs text-[var(--muted)] tabular-nums shrink-0">{s.speed}</span>
             </div>
-            <div className="mb-5">
-              <div className="h-2.5 rounded-full bg-[var(--border)] overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[#8b85ff] progress-fill" style={{ width: `${Math.round(s.overall * 100)}%` }} />
-              </div>
-              <p className="text-xs text-[var(--muted)] mt-1.5 tabular-nums">{Math.round(s.overall * 100)}%</p>
+
+            {activeFile && (
+              <p className="text-sm text-[var(--ink)] truncate mb-2" title={activeFile.name}>
+                {activeFile.name}
+              </p>
+            )}
+
+            <div className="h-2.5 rounded-full bg-[var(--border)] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[#8b85ff] progress-fill"
+                style={{ width: `${Math.min(100, Math.round(s.overall * 100))}%` }}
+              />
             </div>
-            <ul className="space-y-2 max-h-48 overflow-y-auto">
-              {s.files.map((f) => (
-                <li key={f.name} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-[var(--ink)] truncate min-w-0">{f.name}</span>
-                  <span className="text-xs text-[var(--muted)] tabular-nums shrink-0">
-                    {f.status === "done" ? "Done" : f.status === "transferring" ? `${Math.round(f.progress * 100)}%` : formatBytes(f.size)}
-                  </span>
-                </li>
-              ))}
-            </ul>
+
+            <div className="mt-2 flex items-center justify-between gap-2 text-xs text-[var(--muted)] tabular-nums">
+              <span>{Math.min(100, Math.round(s.overall * 100))}%</span>
+              <span>
+                {formatBytes(transferred)} / {formatBytes(totalBytes || 0)}
+              </span>
+            </div>
+
+            {s.files.length > 1 && (
+              <p className="mt-3 text-xs text-[var(--muted)]">
+                {s.files.filter((f) => f.status === "done").length} of {s.files.length} files done
+              </p>
+            )}
           </motion.div>
         )}
 
@@ -151,7 +167,7 @@ export function RoomPanel({ joinRequest, initialFiles, onJoinHandled, onReset }:
               {s.files.map((f) => (
                 <li key={f.name} className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-[var(--ink)] truncate">{f.name}</span>
-                  <span className="text-xs text-[var(--accent)] shrink-0 tabular-nums">{f.status === "done" ? "Done" : formatBytes(f.size)}</span>
+                  <span className="text-xs text-[var(--accent)] shrink-0 tabular-nums">{formatBytes(f.size)}</span>
                 </li>
               ))}
             </ul>

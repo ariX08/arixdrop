@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RoomPanel } from "@/components/RoomPanel";
@@ -10,7 +10,7 @@ import SpecularButton from "@/components/SpecularButton";
 import AnimatedContent from "@/components/AnimatedContent";
 import BlurText from "@/components/BlurText";
 import StrokeText from "@/components/StrokeText";
-import { TurnstileWidget } from "@/components/TurnstileWidget";
+import { TurnstileWidget, hasTurnstileSiteKey } from "@/components/TurnstileWidget";
 import { motion, AnimatePresence } from "motion/react";
 
 function HomeContent() {
@@ -27,8 +27,23 @@ function HomeContent() {
   );
   const [pendingFiles, setPendingFiles] = useState<File[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Invisible Turnstile runs on entry in parallel with the brand animation
-  const [entryToken, setEntryToken] = useState<string | null>(null);
+
+  // Entry gate: StrokeText + invisible Turnstile until verified
+  const [siteReady, setSiteReady] = useState(!hasTurnstileSiteKey());
+
+  // Dev / no key: unlock after stroke plays (~2.5s)
+  useEffect(() => {
+    if (hasTurnstileSiteKey()) return;
+    const t = setTimeout(() => setSiteReady(true), 2600);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Safety: never leave users stuck if invisible Turnstile fails
+  useEffect(() => {
+    if (!hasTurnstileSiteKey() || siteReady) return;
+    const t = setTimeout(() => setSiteReady(true), 12000);
+    return () => clearTimeout(t);
+  }, [siteReady]);
 
   function onHeroSend() {
     fileInputRef.current?.click();
@@ -47,16 +62,51 @@ function HomeContent() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  // ── Entry splash: brand animation + invisible Turnstile only ──────────
+  if (!siteReady) {
+    return (
+      <div className="min-h-dvh flex flex-col items-center justify-center relative px-6">
+        <TurnstileWidget
+          size="invisible"
+          onSuccess={() => setSiteReady(true)}
+          onError={() => {
+            /* keep waiting; safety timeout will unlock */
+          }}
+          onExpire={() => {
+            /* wait for re-challenge or timeout */
+          }}
+        />
+        <div className="w-full max-w-md">
+          <StrokeText
+            text="pigeon"
+            strokeColor="#ffffff"
+            fillColor="#ffffff"
+            strokeStyle="solid"
+            strokeWidth={1.4}
+            drawDuration={2.4}
+            fillDelay={0.15}
+            stagger={0.06}
+            ease="power2.out"
+            trigger="mount"
+            fillMode="wipe"
+            wipeFrom="left"
+            fontSize={96}
+            fontWeight={800}
+            letterSpacing={-3}
+            marching={false}
+            hoverRedraw={false}
+            shadow={false}
+            fontFamily="var(--font-brand), cursive"
+          />
+        </div>
+        <p className="mt-8 text-sm text-white/50 tracking-wide">Loading…</p>
+      </div>
+    );
+  }
+
+  // ── Main site (after Turnstile) ───────────────────────────────────────
   return (
     <div className="min-h-dvh flex flex-col relative">
-      {/* Invisible Turnstile — starts on site entry, no UI */}
-      <TurnstileWidget
-        size="invisible"
-        onSuccess={(token) => setEntryToken(token)}
-        onError={() => setEntryToken(null)}
-        onExpire={() => setEntryToken(null)}
-      />
-
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:text-black focus:px-4 focus:py-2 focus:rounded-lg"
@@ -83,7 +133,7 @@ function HomeContent() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.35 }}
               >
                 <div className="mb-8 sm:mb-10 max-w-md mx-auto px-2">
                   <StrokeText
@@ -92,7 +142,6 @@ function HomeContent() {
                     fillColor="#ffffff"
                     strokeStyle="solid"
                     strokeWidth={1.4}
-                    dashLength={10}
                     drawDuration={2.2}
                     fillDelay={0.15}
                     stagger={0.06}
@@ -135,7 +184,7 @@ function HomeContent() {
 
                   <p className="mt-5 text-base sm:text-lg text-white/85 max-w-lg mx-auto leading-relaxed">
                     No upload. No account. Files move peer-to-peer over an encrypted connection and
-                    disappear when you're done.
+                    disappear when you&apos;re done.
                   </p>
 
                   <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -184,7 +233,6 @@ function HomeContent() {
                 <RoomPanel
                   joinRequest={joinRequest}
                   initialFiles={pendingFiles}
-                  entryToken={entryToken}
                   onJoinHandled={() => {}}
                   onReset={onSessionReset}
                 />

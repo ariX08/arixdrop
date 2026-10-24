@@ -9,19 +9,16 @@ import { useRoomSession } from "@/lib/useRoomSession";
 interface RoomPanelProps {
   joinRequest?: { code: string; nonce: number } | null;
   initialFiles?: File[] | null;
-  /** Token from invisible Turnstile on site entry */
-  entryToken?: string | null;
   onJoinHandled?: () => void;
   onReset?: () => void;
 }
 
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
-export function RoomPanel({ joinRequest, initialFiles, entryToken, onJoinHandled, onReset }: RoomPanelProps) {
+export function RoomPanel({ joinRequest, initialFiles, onJoinHandled, onReset }: RoomPanelProps) {
   const s = useRoomSession({
     joinRequest,
     initialFiles,
-    entryToken,
     onJoinHandled,
     onReset,
     siteKey: SITE_KEY,
@@ -50,18 +47,13 @@ export function RoomPanel({ joinRequest, initialFiles, entryToken, onJoinHandled
                 </ul>
               </div>
             )}
-            {!s.turnstileToken ? (
-              <>
-                <p className="text-sm text-[var(--muted)] mb-3 text-center">Verify you&apos;re human to create the room</p>
-                <TurnstileWidget
-                  onSuccess={(token) => s.setTurnstileToken(token)}
-                  onError={() => s.setTurnstileToken(null)}
-                  onExpire={() => s.setTurnstileToken(null)}
-                />
-              </>
-            ) : (
-              <p className="text-sm text-[var(--muted)] mb-3 text-center">Verification complete — create your room</p>
-            )}
+            <p className="text-sm text-[var(--muted)] mb-3 text-center">Verify you&apos;re human to create the room</p>
+            <TurnstileWidget
+              size="normal"
+              onSuccess={(token) => s.setTurnstileToken(token)}
+              onError={() => s.setTurnstileToken(null)}
+              onExpire={() => s.setTurnstileToken(null)}
+            />
             <div className="mt-4">
               <SpecularButton size="md" radius={12} tint="#635bff" tintOpacity={0.98} textColor="#ffffff" lineColor="#c4b5fd" baseColor="#4c1d95" intensity={1.1} idleIntensity={0.4} disabled={!s.canCreate} className="w-full" onClick={s.confirmAndCreateRoom}>
                 {s.canCreate ? "Create room" : "Complete verification…"}

@@ -13,6 +13,17 @@ import StrokeText from "@/components/StrokeText";
 import { TurnstileWidget, hasTurnstileSiteKey } from "@/components/TurnstileWidget";
 import { motion, AnimatePresence } from "motion/react";
 
+function markSiteUnlocked() {
+  try {
+    sessionStorage.setItem("pigeon-entry-ok", "1");
+  } catch {
+    /* */
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("pigeon-site-ready"));
+  }
+}
+
 function HomeContent() {
   const searchParams = useSearchParams();
   const initialRoom = searchParams.get("room");
@@ -28,22 +39,53 @@ function HomeContent() {
   const [pendingFiles, setPendingFiles] = useState<File[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Entry gate: StrokeText + invisible Turnstile until verified
-  const [siteReady, setSiteReady] = useState(!hasTurnstileSiteKey());
+  // Entry gate — only unlock on successful invisible Turnstile (or no key in dev)
+  const [siteReady, setSiteReady] = useState(false);
+  const [gateError, setGateError] = useState(false);
+  const [turnstileKey, setTurnstileKey] = useState(0); // remount on retry
+  const [barProgress, setBarProgress] = useState(8);
 
-  // Dev / no key: unlock after stroke plays (~2.5s)
+  // Restore unlock within same tab session
   useEffect(() => {
-    if (hasTurnstileSiteKey()) return;
-    const t = setTimeout(() => setSiteReady(true), 2600);
-    return () => clearTimeout(t);
+    try {
+      if (sessionStorage.getItem("pigeon-entry-ok") === "1") {
+        setSiteReady(true);
+        markSiteUnlocked();
+      }
+    } catch {
+      /* */
+    }
   }, []);
 
-  // Safety: never leave users stuck if invisible Turnstile fails
+  // Dev without Turnstile key: unlock after brand animation
   useEffect(() => {
-    if (!hasTurnstileSiteKey() || siteReady) return;
-    const t = setTimeout(() => setSiteReady(true), 12000);
+    if (hasTurnstileSiteKey()) return;
+    if (siteReady) return;
+    const t = setTimeout(() => {
+      setSiteReady(true);
+      markSiteUnlocked();
+    }, 2800);
     return () => clearTimeout(t);
   }, [siteReady]);
+
+  // Indeterminate-ish progress while waiting for Turnstile
+  useEffect(() => {
+    if (siteReady || gateError) return;
+    const id = setInterval(() => {
+      setBarProgress((p) => {
+        if (p >= 88) return 12 + Math.random() * 8;
+        return Math.min(88, p + 3 + Math.random() * 6);
+      });
+    }, 400);
+    return () => clearInterval(id);
+  }, [siteReady, gateError]);
+
+  function unlockSite() {
+    setBarProgress(100);
+    setGateError(false);
+    setSiteReady(true);
+    markSiteUnlocked();
+  }
 
   function onHeroSend() {
     fileInputRef.current?.click();
@@ -62,20 +104,20 @@ function HomeContent() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  // ── Entry splash: brand animation + invisible Turnstile only ──────────
+  // ── Entry splash ─────────────────────────────────────────────────────
   if (!siteReady) {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center relative px-6">
-        <TurnstileWidget
-          size="invisible"
-          onSuccess={() => setSiteReady(true)}
-          onError={() => {
-            /* keep waiting; safety timeout will unlock */
-          }}
-          onExpire={() => {
-            /* wait for re-challenge or timeout */
-          }}
-        />
+        {!gateError && hasTurnstileSiteKey() && (
+          <TurnstileWidget
+            key={turnstileKey}
+            size="invisible"
+            onSuccess={() => unlockSite()}
+            onError={() => setGateError(true)}
+            onExpire={() => setGateError(true)}
+          />
+        )}
+
         <div className="w-full max-w-md">
           <StrokeText
             text="pigeon"
@@ -99,12 +141,40 @@ function HomeContent() {
             fontFamily="var(--font-brand), cursive"
           />
         </div>
-        <p className="mt-8 text-sm text-white/50 tracking-wide">Loading…</p>
+
+        <div className="mt-10 w-full max-w-[220px]">
+          {gateError ? (
+            <div className="text-center space-y-4">
+              <p className="text-sm text-white/80">Verification failed. Please try again.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setGateError(false);
+                  setBarProgress(8);
+                  setTurnstileKey((k) => k + 1);
+                }}
+                className="h-10 px-5 rounded-xl bg-white text-[#1d1d1f] text-sm font-medium hover:bg-white/90 transition"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-white transition-[width] duration-500 ease-out"
+                  style={{ width: `${barProgress}%` }}
+                />
+              </div>
+              <p className="mt-3 text-center text-xs text-white/50 tracking-wide">Verifying…</p>
+            </>
+          )}
+        </div>
       </div>
     );
   }
 
-  // ── Main site (after Turnstile) ───────────────────────────────────────
+  // ── Main site ────────────────────────────────────────────────────────
   return (
     <div className="min-h-dvh flex flex-col relative">
       <a

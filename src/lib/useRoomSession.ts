@@ -15,6 +15,7 @@ import { prepareFilesForTransfer } from "@/lib/zip";
 export interface UseRoomSessionArgs {
   joinRequest?: { code: string; nonce: number } | null;
   initialFiles?: File[] | null;
+  entryToken?: string | null;
   onJoinHandled?: () => void;
   onReset?: () => void;
   siteKey: string;
@@ -23,6 +24,7 @@ export interface UseRoomSessionArgs {
 export function useRoomSession({
   joinRequest,
   initialFiles,
+  entryToken,
   onJoinHandled,
   onReset,
   siteKey,
@@ -43,7 +45,7 @@ export function useRoomSession({
   const [peerCount, setPeerCount] = useState(0);
   const [channelReady, setChannelReady] = useState(false);
   const [sending, setSending] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(entryToken ?? null);
   const [zipping, setZipping] = useState(false);
   const [awaitingVerify, setAwaitingVerify] = useState(!!(initialFiles && initialFiles.length > 0));
 
@@ -72,6 +74,11 @@ export function useRoomSession({
       startedFromFiles.current = true;
     }
   }, [initialFiles]);
+
+  // Pick up invisible Turnstile token from site entry (may arrive after files are selected)
+  useEffect(() => {
+    if (entryToken) setTurnstileToken(entryToken);
+  }, [entryToken]);
 
   const clearTimers = useCallback(() => {
     if (ttlRef.current) clearInterval(ttlRef.current);
@@ -597,7 +604,7 @@ export function useRoomSession({
     setRoomCode("");
     setRoomLink("");
     selectedFilesRef.current = [];
-    setTurnstileToken(null);
+    setTurnstileToken(entryToken ?? null);
     startedFromFiles.current = false;
     onReset?.();
   }

@@ -9,6 +9,8 @@ import { JoinModal } from "@/components/JoinModal";
 import SpecularButton from "@/components/SpecularButton";
 import AnimatedContent from "@/components/AnimatedContent";
 import BlurText from "@/components/BlurText";
+import StrokeText from "@/components/StrokeText";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { motion, AnimatePresence } from "motion/react";
 
 function HomeContent() {
@@ -25,6 +27,8 @@ function HomeContent() {
   );
   const [pendingFiles, setPendingFiles] = useState<File[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Invisible Turnstile runs on entry in parallel with the brand animation
+  const [entryToken, setEntryToken] = useState<string | null>(null);
 
   function onHeroSend() {
     fileInputRef.current?.click();
@@ -45,6 +49,14 @@ function HomeContent() {
 
   return (
     <div className="min-h-dvh flex flex-col relative">
+      {/* Invisible Turnstile — starts on site entry, no UI */}
+      <TurnstileWidget
+        size="invisible"
+        onSuccess={(token) => setEntryToken(token)}
+        onError={() => setEntryToken(null)}
+        onExpire={() => setEntryToken(null)}
+      />
+
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:text-black focus:px-4 focus:py-2 focus:rounded-lg"
@@ -63,7 +75,7 @@ function HomeContent() {
           onChange={(e) => onFilesPicked(e.target.files)}
         />
 
-        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 sm:pt-28 pb-20 text-center text-white">
+        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-20 text-center text-white">
           <AnimatePresence mode="wait">
             {!sessionActive ? (
               <motion.div
@@ -73,6 +85,31 @@ function HomeContent() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.3 }}
               >
+                <div className="mb-8 sm:mb-10 max-w-md mx-auto px-2">
+                  <StrokeText
+                    text="pigeon"
+                    strokeColor="#ffffff"
+                    fillColor="#ffffff"
+                    strokeStyle="solid"
+                    strokeWidth={1.4}
+                    dashLength={10}
+                    drawDuration={2.2}
+                    fillDelay={0.15}
+                    stagger={0.06}
+                    ease="power2.out"
+                    trigger="mount"
+                    fillMode="wipe"
+                    wipeFrom="left"
+                    fontSize={96}
+                    fontWeight={800}
+                    letterSpacing={-3}
+                    marching={false}
+                    hoverRedraw={true}
+                    shadow={false}
+                    fontFamily="var(--font-brand), cursive"
+                  />
+                </div>
+
                 <AnimatedContent
                   distance={40}
                   direction="vertical"
@@ -98,7 +135,7 @@ function HomeContent() {
 
                   <p className="mt-5 text-base sm:text-lg text-white/85 max-w-lg mx-auto leading-relaxed">
                     No upload. No account. Files move peer-to-peer over an encrypted connection and
-                    disappear when you&apos;re done.
+                    disappear when you're done.
                   </p>
 
                   <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -147,6 +184,7 @@ function HomeContent() {
                 <RoomPanel
                   joinRequest={joinRequest}
                   initialFiles={pendingFiles}
+                  entryToken={entryToken}
                   onJoinHandled={() => {}}
                   onReset={onSessionReset}
                 />

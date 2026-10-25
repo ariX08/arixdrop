@@ -24,7 +24,6 @@ export function TurnstileWidget({
   const ref = useRef(null);
 
   if (!SITE_KEY) {
-    // No key configured — treat as passed so local/dev still works
     if (size === "invisible") return null;
     return (
       <p className="text-xs text-[var(--muted)] text-center py-2">
@@ -39,9 +38,11 @@ export function TurnstileWidget({
     <div
       className={
         invisible
-          ? `pointer-events-none absolute w-0 h-0 overflow-hidden opacity-0 ${className}`
+          ? // Keep a real layout box off-screen — zero-size boxes often break invisible Turnstile
+            `fixed left-0 top-0 z-[-1] opacity-0 pointer-events-none overflow-hidden ${className}`
           : `flex justify-center my-3 min-h-[65px] ${className}`
       }
+      style={invisible ? { width: 300, height: 65 } : undefined}
       aria-hidden={invisible}
     >
       <Turnstile
@@ -50,6 +51,9 @@ export function TurnstileWidget({
         options={{
           size,
           theme: "auto",
+          // Retry soft failures inside the widget when possible
+          retry: "auto",
+          refreshExpired: "auto",
         }}
         onSuccess={onSuccess}
         onError={onError}

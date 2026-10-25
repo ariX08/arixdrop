@@ -39,16 +39,16 @@ function HomeContent() {
   const [pendingFiles, setPendingFiles] = useState<File[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Entry gate — only unlock on successful invisible Turnstile (or no key in dev)
   const [siteReady, setSiteReady] = useState(false);
-  const [gateError, setGateError] = useState(false);
-  const [turnstileKey, setTurnstileKey] = useState(0); // remount on retry
-  const [barProgress, setBarProgress] = useState(8);
+  // Remount key for silent Turnstile retries (no UI)
+  const [turnstileKey, setTurnstileKey] = useState(0);
+  const unlockedRef = useRef(false);
 
-  // Restore unlock within same tab session
+  // Same-tab session: skip gate if already verified
   useEffect(() => {
     try {
       if (sessionStorage.getItem("pigeon-entry-ok") === "1") {
+        unlockedRef.current = true;
         setSiteReady(true);
         markSiteUnlocked();
       }
@@ -57,32 +57,31 @@ function HomeContent() {
     }
   }, []);
 
-  // Dev without Turnstile key: unlock after brand animation
+  // Dev without site key: unlock after stroke finishes
   useEffect(() => {
     if (hasTurnstileSiteKey()) return;
     if (siteReady) return;
     const t = setTimeout(() => {
+      unlockedRef.current = true;
       setSiteReady(true);
       markSiteUnlocked();
     }, 2800);
     return () => clearTimeout(t);
   }, [siteReady]);
 
-  // Indeterminate-ish progress while waiting for Turnstile
+  // Silent auto-retry if invisible Turnstile stalls (common on mobile / slow networks)
   useEffect(() => {
-    if (siteReady || gateError) return;
+    if (!hasTurnstileSiteKey() || siteReady) return;
     const id = setInterval(() => {
-      setBarProgress((p) => {
-        if (p >= 88) return 12 + Math.random() * 8;
-        return Math.min(88, p + 3 + Math.random() * 6);
-      });
-    }, 400);
+      if (unlockedRef.current) return;
+      setTurnstileKey((k) => k + 1);
+    }, 5000);
     return () => clearInterval(id);
-  }, [siteReady, gateError]);
+  }, [siteReady]);
 
   function unlockSite() {
-    setBarProgress(100);
-    setGateError(false);
+    if (unlockedRef.current) return;
+    unlockedRef.current = true;
     setSiteReady(true);
     markSiteUnlocked();
   }
@@ -104,17 +103,20 @@ function HomeContent() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  // ── Entry splash ─────────────────────────────────────────────────────
+  // ── Entry: pigeon only ───────────────────────────────────────────────
   if (!siteReady) {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center relative px-6">
-        {!gateError && hasTurnstileSiteKey() && (
+        {hasTurnstileSiteKey() && (
           <TurnstileWidget
             key={turnstileKey}
             size="invisible"
             onSuccess={() => unlockSite()}
-            onError={() => setGateError(true)}
-            onExpire={() => setGateError(true)}
+            onError={() => {
+              // Silent remount — no error UI on the splash
+              setTimeout(() => setTurnstileKey((k) => k + 1), 800);
+            }}
+            onExpire={() => setTurnstileKey((k) => k + 1)}
           />
         )}
 
@@ -140,35 +142,6 @@ function HomeContent() {
             shadow={false}
             fontFamily="var(--font-brand), cursive"
           />
-        </div>
-
-        <div className="mt-10 w-full max-w-[220px]">
-          {gateError ? (
-            <div className="text-center space-y-4">
-              <p className="text-sm text-white/80">Verification failed. Please try again.</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setGateError(false);
-                  setBarProgress(8);
-                  setTurnstileKey((k) => k + 1);
-                }}
-                className="h-10 px-5 rounded-xl bg-white text-[#1d1d1f] text-sm font-medium hover:bg-white/90 transition"
-              >
-                Retry
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-white transition-[width] duration-500 ease-out"
-                  style={{ width: `${barProgress}%` }}
-                />
-              </div>
-              <p className="mt-3 text-center text-xs text-white/50 tracking-wide">Verifying…</p>
-            </>
-          )}
         </div>
       </div>
     );

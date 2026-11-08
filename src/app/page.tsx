@@ -40,12 +40,8 @@ function HomeContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [siteReady, setSiteReady] = useState(false);
-  // Remount key for silent Turnstile retries
   const [turnstileKey, setTurnstileKey] = useState(0);
-  // After a few silent failures / timeout, show a visible widget so mobile users are not stuck
-  const [forceVisible, setForceVisible] = useState(false);
   const unlockedRef = useRef(false);
-  const retryCountRef = useRef(0);
 
   // Same-tab session: skip gate if already verified
   useEffect(() => {
@@ -72,33 +68,6 @@ function HomeContent() {
     return () => clearTimeout(t);
   }, [siteReady]);
 
-  // Mobile-friendly recovery:
-  // 1) After 8s with no token → switch to visible Turnstile
-  // 2) Soft remount a couple of times early (not forever every 5s)
-  useEffect(() => {
-    if (!hasTurnstileSiteKey() || siteReady) return;
-
-    const visibleTimer = setTimeout(() => {
-      if (!unlockedRef.current) setForceVisible(true);
-    }, 8000);
-
-    const remountTimer = setInterval(() => {
-      if (unlockedRef.current) return;
-      if (retryCountRef.current >= 2) {
-        // Stop silent remounts; visible fallback will take over
-        setForceVisible(true);
-        return;
-      }
-      retryCountRef.current += 1;
-      setTurnstileKey((k) => k + 1);
-    }, 4500);
-
-    return () => {
-      clearTimeout(visibleTimer);
-      clearInterval(remountTimer);
-    };
-  }, [siteReady]);
-
   function unlockSite() {
     if (unlockedRef.current) return;
     unlockedRef.current = true;
@@ -123,38 +92,10 @@ function HomeContent() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  // ── Entry: pigeon only ───────────────────────────────────────────────
+  // ── Entry: pigeon + visible Turnstile ─────────────────────────────────
   if (!siteReady) {
     return (
-      <div className="min-h-dvh flex flex-col items-center justify-center relative px-6">
-        {hasTurnstileSiteKey() && (
-          <div
-            className={
-              forceVisible
-                ? "absolute bottom-10 left-0 right-0 flex justify-center px-4 z-10"
-                : "contents"
-            }
-          >
-            <TurnstileWidget
-              key={`${turnstileKey}-${forceVisible ? "v" : "i"}`}
-              size={forceVisible ? "flexible" : "invisible"}
-              onSuccess={() => unlockSite()}
-              onError={() => {
-                // One soft remount; then force visible so the user is not stuck
-                if (retryCountRef.current < 2) {
-                  retryCountRef.current += 1;
-                  setTimeout(() => setTurnstileKey((k) => k + 1), 900);
-                } else {
-                  setForceVisible(true);
-                }
-              }}
-              onExpire={() => {
-                setTurnstileKey((k) => k + 1);
-              }}
-            />
-          </div>
-        )}
-
+      <div className="min-h-dvh flex flex-col items-center justify-center relative px-6 gap-8">
         <div className="w-full max-w-md">
           <StrokeText
             text="pigeon"
@@ -179,10 +120,21 @@ function HomeContent() {
           />
         </div>
 
-        {forceVisible && (
-          <p className="mt-6 text-sm text-white/70 text-center max-w-xs">
-            Quick security check — tap the box if it appears.
-          </p>
+        {hasTurnstileSiteKey() && (
+          <div className="flex flex-col items-center gap-3 w-full max-w-sm">
+            <TurnstileWidget
+              key={turnstileKey}
+              size="flexible"
+              onSuccess={() => unlockSite()}
+              onError={() => {
+                setTimeout(() => setTurnstileKey((k) => k + 1), 1000);
+              }}
+              onExpire={() => setTurnstileKey((k) => k + 1)}
+            />
+            <p className="text-sm text-white/70 text-center">
+              Quick security check to continue
+            </p>
+          </div>
         )}
       </div>
     );

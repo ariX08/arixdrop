@@ -9,7 +9,7 @@ interface Props {
   onSuccess: (token: string) => void;
   onError?: () => void;
   onExpire?: () => void;
-  /** invisible = runs on load with no UI (site entry). normal = visible checkbox. */
+  /** invisible = runs on load with no UI (site entry). normal / flexible = visible. */
   size?: "normal" | "compact" | "invisible" | "flexible";
   className?: string;
 }
@@ -38,11 +38,10 @@ export function TurnstileWidget({
     <div
       className={
         invisible
-          ? // Keep a real layout box off-screen — zero-size boxes often break invisible Turnstile
-            `fixed left-0 top-0 z-[-1] opacity-0 pointer-events-none overflow-hidden ${className}`
+          ? // Real layout box, clipped — opacity-0 / pointer-events-none / z-[-1] break invisible Turnstile on many mobile browsers
+            `absolute left-0 top-0 w-[300px] h-[65px] overflow-hidden [clip-path:inset(50%)] ${className}`
           : `flex justify-center my-3 min-h-[65px] ${className}`
       }
-      style={invisible ? { width: 300, height: 65 } : undefined}
       aria-hidden={invisible}
     >
       <Turnstile
@@ -51,7 +50,6 @@ export function TurnstileWidget({
         options={{
           size,
           theme: "auto",
-          // Retry soft failures inside the widget when possible
           retry: "auto",
           refreshExpired: "auto",
         }}
